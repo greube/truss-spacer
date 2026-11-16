@@ -11,7 +11,13 @@ python3 -m http.server 8000
 # then open http://localhost:8000 on your phone (same Wi-Fi) or desktop
 ```
 
-On Android: open it in Chrome, then ⋮ → **Add to Home screen**.
+The offline service worker only runs when served over http(s) (or `localhost`), not from `file://`.
+
+## Install on Android
+
+Live at **https://greube.github.io/truss-spacer/** (deployed from `main` by `.github/workflows/pages.yml`).
+
+Open that URL in Chrome, then ⋮ → **Add to Home screen** → **Install**. It opens full screen from its own icon and works with no signal once it has loaded once.
 
 ## Features
 
@@ -22,6 +28,7 @@ On Android: open it in Chrome, then ⋮ → **Add to Home screen**.
 - Join-proximity warnings
 - Optional in-section distances
 - Tick-off marks list, copy as text, keep screen on
-- PNG plot export with dimensions
+- PNG plot export with dimensions: save, or share straight to Messages/WhatsApp
+- Installable PWA that works fully offline (self-hosted fonts)
 
 See `CLAUDE.md` for architecture, decisions and next steps.

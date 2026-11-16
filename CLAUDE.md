@@ -6,7 +6,15 @@ It was built in a claude.ai chat as a single-page web app published as a Claude 
 
 ## Current state
 
-- **Everything is in `index.html`**: HTML, CSS and JS in one file. There's no build step and no framework. The only external dependency is Google Fonts (Barlow Condensed, Barlow, JetBrains Mono), and each font has a system fallback.
+- **The app is in `index.html`**: HTML, CSS and JS in one file. There's no build step and no framework. Alongside it, only what the PWA needs:
+  - `manifest.webmanifest`
+  - `sw.js`
+  - `icons/` (generated from `icon.svg` and `maskable.svg`)
+  - `fonts/` (self-hosted Latin-subset WOFF2 of Barlow, Barlow Condensed and JetBrains Mono, under the OFL)
+
+  The app makes no external requests.
+- **PWA**: `sw.js` precaches every file in its `ASSETS` list and serves stale-while-revalidate. **Add any new file to `ASSETS`.** The SW only registers over http(s).
+- **Deploy**: `.github/workflows/pages.yml` publishes only the app files to GitHub Pages on every push to `main`. It stamps `VERSION` in `sw.js` with the commit SHA so each deploy gets a fresh cache. URL: https://greube.github.io/truss-spacer/
 - The original artifact host injected the `<!doctype>`/`<head>` skeleton and a small CSS reset. Both have been inlined at the top of `index.html`, so the file now runs standalone. Open it in a browser or serve the folder.
 - There are no tests yet.
 
@@ -53,22 +61,16 @@ It was built in a claude.ai chat as a single-page web app published as a Claude 
 | `svgDraw(r)` | The on-screen truss drawing (SVG, coloured from CSS tokens). |
 | `fillChips()` and chip handler | Quick-entry buttons for the truss box. |
 | `buildPng()` | Canvas export, with fixed light colours for printing. |
-| Export overlay and `getDownloads()` | Preview plus save. See below. |
-
-## Host-specific code to deal with first
-
-`getDownloads()` calls `window.claude?.use?.("downloads")`. That is the claude.ai artifact runtime's save-file API, and it **doesn't exist outside claude.ai**. Standalone, the code already falls back to hiding **Save PNG** and asking the user to long-press the preview image. That fallback works, but it's clunky.
-
-**Suggested first task:** when `window.claude` is absent, save with a normal `<a download>` built from the blob URL. Optionally add the Web Share API (`navigator.share({files:[...]})`) so the image can go straight to Messages or WhatsApp on Android. The `<meta name="claude:viewport-fit-sides">` tag is harmless but host-specific, and can be removed.
+| Export overlay | Preview, **Save PNG** and **Share**. Save uses the claude.ai `downloads` API when present (`getDownloads()`), otherwise an `<a download>` from the blob URL. **Share** uses `navigator.share({files})` and shows only when `navigator.canShare` accepts a PNG file. |
 
 ## Next steps the owner has mentioned or been offered
 
 - **Real Android app.** The owner's original ask was "a lightweight android application". The options, from least to most work:
-  1. **PWA**: add `manifest.webmanifest`, icons and a service worker for full offline use, so "Add to Home screen" installs it properly. Self-host the fonts so offline is truly offline.
+  1. ~~**PWA**~~: done (manifest, icons, service worker, self-hosted fonts, GitHub Pages).
   2. **Capacitor or TWA wrapper**: produce an APK or AAB around the same `index.html`.
   3. Native Kotlin rewrite. Probably not worth it.
 
-  Hosting for the PWA could be GitHub Pages.
+- Very dense layouts (e.g. 45 fixtures on 8 m with in-section distances on) overlap mark labels on the export even at 90°. This is a known limitation of the label maths.
 - A single "all gaps X" label on the export when the chain-line gap labels don't fit.
 - Swap the chip sizes for the owner's actual truss stock if asked (for example 0.5 m and 1.25 m pieces).
 - Make the in-section switch remember its state, but only if asked. It is currently off by design.
