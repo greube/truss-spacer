@@ -1,0 +1,920 @@
+{
+ "about": "Curated maximum power consumption for common touring and rental fixtures. Each figure comes from the manufacturer's spec sheet or product page (url, quote). kind 'rated' means a lamp or nameplate rating for generic gear. Rebuild the app data with tools/build-fixtures.py after editing.",
+ "updated": "2026-11-16",
+ "fixtures": [
+  {
+   "m": "Antari",
+   "n": "HZ-500",
+   "w": 480,
+   "url": "https://antari.com/products/hz-500/",
+   "quote": "Rated Power: 120V 400W; 240V 480W"
+  },
+  {
+   "m": "Astera",
+   "n": "AX2 PixelBar (100 cm)",
+   "w": 104,
+   "url": "https://astera-led.com/products/ax2-pixelbar/specs/",
+   "quote": "AC Input: 96-264 VAC, 50/60 Hertz, 2 A, 104 W",
+   "note": "Battery powered, with built-in AC input."
+  },
+  {
+   "m": "Astera",
+   "n": "AX2 PixelBar (50 cm)",
+   "w": 49,
+   "url": "https://astera-led.com/products/ax2-pixelbar/specs/",
+   "quote": "96-264 VAC, 50/60 Hertz, 2 A, 49 W",
+   "note": "Battery powered, with built-in AC input."
+  },
+  {
+   "m": "Astera",
+   "n": "AX9 PowerPAR",
+   "w": 110,
+   "url": "https://astera-led.com/products/ax9-powerpar/specs/",
+   "quote": "100-240 VAC, 50/60 Hz, 2.3 A/115 VAC, 1.1 A/230 VAC, 110 W",
+   "note": "Battery powered, with built-in AC input."
+  },
+  {
+   "m": "Astera",
+   "n": "NYX Bulb",
+   "w": 10,
+   "url": "https://astera-led.com/products/nyx-bulb/specs/",
+   "quote": "LED Power Draw: 10 W",
+   "note": "Mains or battery powered bulb. Total LED power is 14 W; Astera's D-Tap SplitCable page plans for 11 W each."
+  },
+  {
+   "m": "Ayrton",
+   "n": "Argo 6 FX",
+   "w": 950,
+   "url": "https://www.ayrton.eu/wp-content/uploads/2023/04/Argo6FX_Web_EN_V131.pdf",
+   "quote": "Power Consumption: 950 W maximum"
+  },
+  {
+   "m": "Ayrton",
+   "n": "Bora",
+   "w": 1150,
+   "url": "https://www.ayrton.eu/wp-content/uploads/2020/06/Bora_Web_EN_V223.pdf",
+   "quote": "Power Consumption: 1,150 W"
+  },
+  {
+   "m": "Ayrton",
+   "n": "Cobra",
+   "w": 480,
+   "url": "https://www.ayrton.eu/wp-content/uploads/2024/01/Cobra_-User-Manual_EN_V125.pdf",
+   "quote": "Power Consumption: 480 W"
+  },
+  {
+   "m": "Ayrton",
+   "n": "Diablo",
+   "w": 550,
+   "url": "https://www.ayrton.eu/wp-content/uploads/2020/03/Diablo_Web_EN_V231-2.pdf",
+   "quote": "Power Consumption: 550W"
+  },
+  {
+   "m": "Ayrton",
+   "n": "Domino Profile",
+   "w": 1800,
+   "url": "https://www.ayrton.eu/wp-content/uploads/2023/02/DominoProfile-User-Manual_EN_V224.pdf",
+   "quote": "Power Consumption: 1,800 W maximum"
+  },
+  {
+   "m": "Ayrton",
+   "n": "Eurus",
+   "w": 900,
+   "url": "https://www.ayrton.eu/wp-content/uploads/2020/06/EurusProfile_Web_EN_V225.pdf",
+   "quote": "Power Consumption: 900 W"
+  },
+  {
+   "m": "Ayrton",
+   "n": "Ghibli",
+   "w": 900,
+   "url": "https://www.ayrton.eu/wp-content/uploads/2020/06/Ghibli_Web_EN_V201-2.pdf",
+   "quote": "Power Consumption: 900 W",
+   "note": "Ayrton 2019 catalogue table shows 800 W; user manual's 900 W used as the higher figure."
+  },
+  {
+   "m": "Ayrton",
+   "n": "Huracán-X",
+   "w": 1400,
+   "url": "https://www.ayrton.eu/wp-content/uploads/2019/05/AYRTON-2019.pdf",
+   "quote": "120 to 240 Volts / 1,400 W (HURACÁN-X column, power supply spec table)",
+   "note": "Discontinued; ayrton.eu/produit/huracan-x now redirects to Huracán Profile (1470 W max) — a different fixture."
+  },
+  {
+   "m": "Ayrton",
+   "n": "Karif-LT",
+   "w": 550,
+   "url": "https://www.ayrton.eu/wp-content/uploads/2020/03/KarifLT_Web_EN.pdf",
+   "quote": "Power Consumption: 550 W"
+  },
+  {
+   "m": "Ayrton",
+   "n": "Khamsin",
+   "w": 1150,
+   "url": "https://www.ayrton.eu/wp-content/uploads/2020/06/Khamsin-User-Manual_EN_V222.pdf",
+   "quote": "Power Consumption: 1,150 W"
+  },
+  {
+   "m": "Ayrton",
+   "n": "Kyalami",
+   "w": 200,
+   "url": "https://www.ayrton.eu/wp-content/uploads/2024/03/Kyalami-User-Manual_EN_V118.pdf",
+   "quote": "Power Consumption: 200 W"
+  },
+  {
+   "m": "Ayrton",
+   "n": "Levante",
+   "w": 550,
+   "url": "https://www.ayrton.eu/wp-content/uploads/2020/03/Levante_Web_EN_V232.pdf",
+   "quote": "Power Consumption: 550 W"
+  },
+  {
+   "m": "Ayrton",
+   "n": "MagicPanel-R",
+   "w": 450,
+   "url": "https://www.ayrton.eu/wp-content/uploads/2015/04/MagicPanel-R.pdf",
+   "quote": "from a maximum power consumption of 450 Watt",
+   "note": "Same datasheet's spec list says 'Power 430 Watt max' and the user manual says '430 W maximum power'; using the higher 450 W. Discontinued."
+  },
+  {
+   "m": "Ayrton",
+   "n": "Mistral",
+   "w": 550,
+   "url": "https://www.ayrton.eu/wp-content/uploads/2020/03/Mistral_Web_EN_V230.pdf",
+   "quote": "Power Consumption: 550 W"
+  },
+  {
+   "m": "Ayrton",
+   "n": "Perseo Profile",
+   "w": 800,
+   "url": "https://www.ayrton.eu/wp-content/uploads/2020/06/Perseo-Profile-User-Manual_EN_V227.pdf",
+   "quote": "Power Consumption: 800 W"
+  },
+  {
+   "m": "Ayrton",
+   "n": "Rivale Profile",
+   "w": 700,
+   "url": "https://www.ayrton.eu/wp-content/uploads/2024/04/Rivale-Profile-User-Manual_EN_V123.pdf",
+   "quote": "Power Consumption: 700 W"
+  },
+  {
+   "m": "Ayrton",
+   "n": "Zonda 3 FX",
+   "w": 400,
+   "url": "https://www.ayrton.eu/wp-content/uploads/2022/12/Zonda3FX_Web_EN_V132.pdf",
+   "quote": "Power Consumption: 400 W"
+  },
+  {
+   "m": "Ayrton",
+   "n": "Zonda 9 FX",
+   "w": 1400,
+   "url": "https://www.ayrton.eu/wp-content/uploads/2021/10/Zonda9FX_Web_EN_V132.pdf",
+   "quote": "Power Consumption: 1,400 W maximum"
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "COLORado 1 Solo",
+   "w": 65,
+   "url": "https://chauvetprofessional.com/product/colorado-1-solo/",
+   "quote": "65 W, 0.297 A @ 230 V, 50 Hz"
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "COLORado 2 Solo",
+   "w": 123,
+   "url": "https://chauvetprofessional.com/product/colorado-2-solo/",
+   "quote": "Power and Current 123 W, 0.57 A @ 230 V, 50 Hz"
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "COLORado 3 Solo",
+   "w": 175,
+   "url": "https://www.chauvetprofessional.com/products/colorado-3-solo/?format=pdf",
+   "quote": "175 W, 0.869 A @ 230 V, 50 Hz",
+   "note": "120 V: 187 W."
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "COLORado Batten 72X",
+   "w": 163,
+   "url": "https://chauvetprofessional.com/product/colorado-batten-72x/",
+   "quote": "163 W, 0.71 A @ 230 V, 50 Hz"
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "COLORado PXL Bar 16",
+   "w": 768,
+   "url": "https://chauvetprofessional.com/product/colorado-pxl-bar-16/",
+   "quote": "Power and Current 768 W, 3.485 A @ 230 V, 50 Hz",
+   "note": "120 V: 790 W."
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "Maverick Force 1 Spot",
+   "w": 632,
+   "url": "https://chauvetprofessional.com/product/maverick-force-1-spot/",
+   "quote": "Power and Current 632 W, 2.79 A @ 230 V, 50 Hz",
+   "note": "240 V: 630 W."
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "Maverick MK3 Profile",
+   "w": 1180,
+   "url": "https://chauvetprofessional.com/product/maverick-mk3-profile/",
+   "quote": "1180 W, 5.24 A @ 230 V, 50 Hz",
+   "note": "120 V: 1230 W. MK3 Profile CX is 1220 W @ 230 V."
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "Maverick Storm 1 Beam",
+   "w": 467,
+   "url": "https://chauvetprofessional.com/product/maverick-storm-1-beam/",
+   "quote": "Power and Current 467 W, 2.011 A @ 230 V, 50 Hz",
+   "note": "310 W is the lamp rating. 120 V: 482 W."
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "Maverick Storm 1 Hybrid",
+   "w": 647,
+   "url": "https://chauvetprofessional.com/product/maverick-storm-1-hybrid/",
+   "quote": "Power and Current 647 W, 2.800 A @ 230 V, 50 Hz",
+   "note": "420 W is the lamp rating, not the fixture draw. 120 V: 660 W."
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "Maverick Storm 1 Spot",
+   "w": 704,
+   "url": "https://chauvetprofessional.com/product/maverick-storm-1-spot/",
+   "quote": "Power and Current 704 W, 2.97A @ 230 V, 50 Hz",
+   "note": "120 V: 700 W; 208 V: 705 W."
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "Maverick Storm 1 Wash",
+   "w": 461,
+   "url": "https://chauvetprofessional.com/product/maverick-storm-1-wash/",
+   "quote": "Power and Current 461 W, 2.013 A @ 230 V, 50 Hz",
+   "note": "Discontinued. Some retailers list 430 W @ 230 V; manufacturer figure used."
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "Maverick Storm 2 Profile",
+   "w": 763,
+   "url": "https://chauvetprofessional.com/product/maverick-storm-2-profile/",
+   "quote": "Power and Current 763 W, 3.41 A @ 230 V, 50 Hz",
+   "note": "240 V: 767 W (Profile M page)."
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "Maverick Storm 4 Profile",
+   "w": 1760,
+   "url": "https://chauvetprofessional.com/product/maverick-storm-4-profile/",
+   "quote": "Power and Current 1760 W, 7.79 A @ 230 V, 50 Hz",
+   "note": "120 V: 1780 W. Only one per 2400 W circuit."
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "Ovation E-910FC",
+   "w": 216,
+   "url": "https://chauvetprofessional.com/product/ovation-e-910fc/",
+   "quote": "216 W, .94 A @ 230 V, 50 Hz",
+   "note": "An older Chauvet cut sheet says 234 W @ 230 V. E-910FC IP is 241 W."
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "Ovation Rêve E-3",
+   "w": 353,
+   "url": "https://chauvetprofessional.com/product/ovation-reve-e-3/",
+   "quote": "Power and Current 353 W, 1.59 A @ 230 V, 50 Hz",
+   "note": "Rêve E-3 IP is 342 W."
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "Rogue Outcast 1 BeamWash",
+   "w": 372,
+   "url": "https://chauvetprofessional.com/product/rogue-outcast-1-beamwash/",
+   "quote": "372 W, 1.69 A @ 230 V, 50 Hz",
+   "note": "Manual says the current figure is average draw under normal conditions."
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "Rogue R1 Spot",
+   "w": 220,
+   "url": "https://www.pssl.com/products/chauvet-rogue-r1-spot-140-watt-moving-head-led-light",
+   "quote": "Power and Current: 220 W, 1.0 A @ 230 V, 50 Hz",
+   "note": "Original 140 W LED model (discontinued). Distributor figure; not found on Chauvet's site. 120 V: 225 W. Not the R1E (303 W) or R1X (299 W)."
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "Rogue R2 Spot",
+   "w": 301,
+   "url": "https://www.pssl.com/products/chauvet-rogue-r2-spot-240-watt-led-moving-head-light",
+   "quote": "301 W, 1.4 A @ 230 V, 50 Hz",
+   "note": "Original 240 W LED model (discontinued). Distributor figure. Not the R2E (469 W) or R2X (481 W)."
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "Rogue R2 Wash",
+   "w": 324,
+   "url": "https://chauvetprofessional.com/product/rogue-r2-wash/",
+   "quote": "Power and Current 324 W, 1.50 A @ 230 V, 50 Hz"
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "Rogue R2X Wash",
+   "w": 344,
+   "url": "https://chauvetprofessional.com/product/rogue-r2x-wash/",
+   "quote": "Power and Current 344 W, 1.488 A @ 230 V, 50 Hz",
+   "note": "R2X Wash VW is 339 W."
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "Rogue R3 Spot",
+   "w": 521,
+   "url": "https://chauvetprofessional.com/product/rogue-r3-spot/",
+   "quote": "521 W, 2.22 A @ 230 V, 50 Hz",
+   "note": "Matches user manual. 120 V: 529 W."
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "Rogue R3 Wash",
+   "w": 704,
+   "url": "https://chauvetprofessional.com/product/rogue-r3-wash/",
+   "quote": "704 W, 3.10 A @ 230 V, 50 Hz",
+   "note": "R3X Wash is 650 W."
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "STRIKE 1",
+   "w": 254,
+   "url": "https://chauvetprofessional.com/product/strike-1/",
+   "quote": "254 W, 1.179 A @ 230 V, 50 Hz"
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "STRIKE 4",
+   "w": 286,
+   "url": "https://www.chauvetprofessional.com/products/strike-4/?format=pdf",
+   "quote": "286 W, 1.29 A @ 230 V, 50 Hz"
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "STRIKE Array 4",
+   "w": 245,
+   "url": "https://chauvetprofessional.com/product/strike-array-4/",
+   "quote": "245 W, 1.07 A @ 230 V, 50 Hz",
+   "note": "Not the STRIKE Array 4C (1140 W)."
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "STRIKE P38",
+   "w": 58,
+   "url": "https://chauvetprofessional.com/product/strike-p38/",
+   "quote": "58 W, 0.245 A @ 230 V, 50 Hz"
+  },
+  {
+   "m": "Chauvet Professional",
+   "n": "WELL FIT",
+   "w": 54,
+   "url": "https://chauvetprofessional.com/product/well-fit/",
+   "quote": "54 W, 0.342 A @ 230 V, 50 Hz",
+   "note": "Battery powered; this is the single-unit charging draw. Charging case: 317 W @ 230 V."
+  },
+  {
+   "m": "Clay Paky",
+   "n": "A.leda B-EYE K10 Classic",
+   "w": 450,
+   "url": "https://claypaky.it/products/a-leda-b-eye-k10",
+   "quote": "Max Power consumption: 450 VA",
+   "note": "Clay Paky rates input in VA (apparent power); VA is >= real watts, so using it as W is conservative. Figure taken from a search-result snippet of the source (site blocks automated fetching). Also 'INPUT POWER 450VA' in the 12.2017 spec sheet."
+  },
+  {
+   "m": "Clay Paky",
+   "n": "A.leda B-EYE K20",
+   "w": 750,
+   "url": "https://www.claypaky.it/products/a-leda-b-eye-k20",
+   "quote": "Max Power consumption: 750 VA",
+   "note": "Clay Paky rates input in VA (apparent power); VA is >= real watts, so using it as W is conservative. Figure taken from a search-result snippet of the source (site blocks automated fetching). Also 'INPUT POWER 750VA' in the 01.2018 spec sheet."
+  },
+  {
+   "m": "Clay Paky",
+   "n": "Arolla Profile HP",
+   "w": 1800,
+   "url": "https://goknight.com/claypaky-cl3014-arolla-profile-hp-led-moving-head-fixture/",
+   "quote": "Input Power: 1800 VA@230Vac 50Hz",
+   "note": "Claypaky product page says 'Max Power consumption: 1650VA'; the Go Knight listing also gives 1800 VA @230 V. Using the higher figure. VA rating; search snippets."
+  },
+  {
+   "m": "Clay Paky",
+   "n": "Arolla Profile MP",
+   "w": 740,
+   "url": "https://claypaky.it/products/arolla-profile-mp",
+   "quote": "Max Power consumption: 740VA",
+   "note": "Clay Paky rates input in VA (apparent power); VA is >= real watts, so using it as W is conservative. Figure taken from a search-result snippet of the source (site blocks automated fetching)."
+  },
+  {
+   "m": "Clay Paky",
+   "n": "Axcor Profile 900",
+   "w": 1400,
+   "url": "https://manuals.online/claypaky/dj-equipment/axcor-profile-900/user-manual/20c16",
+   "quote": "Power consumption 1400VA at 230V 50Hz",
+   "note": "From the Claypaky instruction manual, but only found on a manual-mirror site via search snippet; marketing materials say ~900 W / 'around 1 kW'. VA rating. Verify against official datasheet."
+  },
+  {
+   "m": "Clay Paky",
+   "n": "HY B-EYE K15",
+   "w": 700,
+   "url": "https://www.claypaky.it/products/hy-b-eye-k15/",
+   "quote": "MAX power consumption: 700 VA @230 Vac 50 Hz",
+   "note": "Clay Paky rates input in VA (apparent power); VA is >= real watts, so using it as W is conservative. Figure taken from a search-result snippet of the source (site blocks automated fetching). An older 2019 leaflet gives 600 VA; using the higher current figure."
+  },
+  {
+   "m": "Clay Paky",
+   "n": "Mini-B",
+   "w": 375,
+   "url": "https://goknight.com/content/documentation/Mini-B_DataSheet_01.2023.pdf",
+   "quote": "Max Power consumption: 375VA",
+   "note": "Claypaky datasheet (01.2023, CL3005) hosted by Go Knight; search snippet. VA rating."
+  },
+  {
+   "m": "Clay Paky",
+   "n": "Mythos 2",
+   "w": 700,
+   "url": "https://goknight.com/content/documentation/Mythos2_Datasheet_07.2019.pdf",
+   "quote": "Input power 700VA @ 230V 50Hz",
+   "note": "Claypaky datasheet (07.2019) hosted by distributor Go Knight; figure from search snippet. VA rating."
+  },
+  {
+   "m": "Clay Paky",
+   "n": "Scenius Unico",
+   "w": 1800,
+   "url": "https://goknight.com/content/documentation/SceniusUnico_Specifications_04.2018.pdf",
+   "quote": "Max Power consumption: 1800VA",
+   "note": "Claypaky spec sheet (04.2018) hosted by distributor Go Knight; figure from search snippet. VA rating; 1400 W lamp."
+  },
+  {
+   "m": "Clay Paky",
+   "n": "Sharpy",
+   "w": 350,
+   "url": "https://www.claypaky.it/products/sharpy-legacy/",
+   "quote": "Max Power consumption: 350VA",
+   "note": "Clay Paky rates input in VA (apparent power); VA is >= real watts, so using it as W is conservative. Figure taken from a search-result snippet of the source (site blocks automated fetching). Older 2011 leaflet quotes 189 W nominal / 350 VA."
+  },
+  {
+   "m": "Clay Paky",
+   "n": "Sharpy Plus",
+   "w": 540,
+   "url": "https://www.claypaky.it/products/sharpy-plus/",
+   "quote": "Max Power consumption: 540VA",
+   "note": "Clay Paky rates input in VA (apparent power); VA is >= real watts, so using it as W is conservative. Figure taken from a search-result snippet of the source (site blocks automated fetching)."
+  },
+  {
+   "m": "Clay Paky",
+   "n": "Sharpy X Frame",
+   "w": 750,
+   "url": "https://www.claypaky.it/products/sharpy-xframe/",
+   "quote": "Max Power consumption: 750VA",
+   "note": "Clay Paky rates input in VA (apparent power); VA is >= real watts, so using it as W is conservative. Figure taken from a search-result snippet of the source (site blocks automated fetching)."
+  },
+  {
+   "m": "Clay Paky",
+   "n": "Skylos",
+   "w": 900,
+   "url": "https://claypaky.it/products/skylos",
+   "quote": "Max power consumption: 900W",
+   "note": "Search snippet of Claypaky product page; Skylos & NV datasheet 09.2024 gives 900VA. Early launch material said 600 W; using the higher current figure."
+  },
+  {
+   "m": "Clay Paky",
+   "n": "Stormy CC",
+   "w": 850,
+   "url": "https://goknight.com/claypaky-c71091-stormy-cc-led-strobe-light/",
+   "quote": "Max Power consumption: 850 VA",
+   "note": "Distributor (Go Knight) listing of Claypaky spec; search snippet. VA rating. LED source is rated 980 W pulsed / 720 W continuous, and Panavision lists 980 W power draw — check before planning tight circuits."
+  },
+  {
+   "m": "Clay Paky",
+   "n": "Tambora Linear 100",
+   "w": 440,
+   "url": "https://www.claypaky.it/en/products/tambora-linear",
+   "quote": "Max Power consumption: 440W",
+   "note": "Requested as 'Tambora Linear'; the standard model is Tambora Linear 100 (Tambora Linear 60 is 240 W). Search snippet; also in 11.2022 datasheet."
+  },
+  {
+   "m": "Clay Paky",
+   "n": "Volero Wave",
+   "w": 400,
+   "url": "https://www.claypaky.it/products/volero-wave/",
+   "quote": "Max Power consumption: 400VA",
+   "note": "Clay Paky rates input in VA (apparent power); VA is >= real watts, so using it as W is conservative. Figure taken from a search-result snippet of the source (site blocks automated fetching). Same in 11.2022 and 2026 datasheets."
+  },
+  {
+   "m": "Clay Paky",
+   "n": "Xtylos",
+   "w": 400,
+   "url": "https://goknight.com/content/documentation/Xtylos_Datasheet_07.2021.pdf",
+   "quote": "Max Power consumption: 400VA",
+   "note": "Claypaky datasheet (07.2021) hosted by Go Knight; search snippet. VA rating. Mains out max 1600 VA (4 fixtures)."
+  },
+  {
+   "m": "Elation",
+   "n": "Artiste Mondrian",
+   "w": 1500,
+   "url": "https://www.elationlighting.com/artiste-mondrian",
+   "quote": "Max Power Consumption 1,500W"
+  },
+  {
+   "m": "Elation",
+   "n": "Artiste Monet",
+   "w": 1400,
+   "url": "https://www.elationlighting.com/artiste-monet",
+   "quote": "Max Power Consumption: 1400W"
+  },
+  {
+   "m": "Elation",
+   "n": "Artiste Picasso",
+   "w": 1000,
+   "url": "https://www.elationlighting.com/artiste-picasso",
+   "quote": "AC 100-240V - 50/60Hz 1000W Max Power Consumption"
+  },
+  {
+   "m": "Elation",
+   "n": "Chorus Line 16",
+   "w": 739,
+   "url": "https://www.elationlighting.com/products/chorus-line-16",
+   "quote": "AC 100-240V - 50/60Hz 739W Max Power Consumption"
+  },
+  {
+   "m": "Elation",
+   "n": "Dartz 360",
+   "w": 154,
+   "url": "https://www.elationlighting.com/dartz-360",
+   "quote": "AC 100-240V - 50/60Hz 154W Max Power Consumption"
+  },
+  {
+   "m": "Elation",
+   "n": "DTW Blinder 700 IP",
+   "w": 680,
+   "url": "https://www.elationlighting.com/dtw-blinder-700-ip",
+   "quote": "AC 100-240V - 50/60Hz 680W Max Power Consumption"
+  },
+  {
+   "m": "Elation",
+   "n": "Fuze Profile",
+   "w": 540,
+   "url": "https://www.elationlighting.com/fuze-profile",
+   "quote": "AC 100-240V - 50/60Hz 540W Max Power Consumption"
+  },
+  {
+   "m": "Elation",
+   "n": "Fuze Wash Z350",
+   "w": 399,
+   "url": "https://www.elationlighting.com/fuze-wash-z350",
+   "quote": "AC 110-240V - 50/60Hz 399W Max Power Consumption"
+  },
+  {
+   "m": "Elation",
+   "n": "Paladin",
+   "w": 990,
+   "url": "https://www.elationlighting.com/paladin",
+   "quote": "AC 100-240V - 50/60Hz 990W Max Power Consumption"
+  },
+  {
+   "m": "Elation",
+   "n": "Paladin Cube",
+   "w": 120,
+   "url": "https://www.elationlighting.com/paladin-cube",
+   "quote": "AC 100-240V - 50/60Hz 120W Max Power Consumption"
+  },
+  {
+   "m": "Elation",
+   "n": "Proteus Brutus",
+   "w": 1700,
+   "url": "https://www.elationlighting.com/products/proteus-brutus",
+   "quote": "Max Power Consumption 1,700W",
+   "note": "Some resellers list 1,650 W."
+  },
+  {
+   "m": "Elation",
+   "n": "Proteus Excalibur",
+   "w": 800,
+   "url": "https://www.elationlighting.com/proteus-excalibur",
+   "quote": "AC 100-240V - 50/60Hz 800W Max Power Consumption"
+  },
+  {
+   "m": "Elation",
+   "n": "Proteus Hybrid",
+   "w": 700,
+   "url": "https://www.elationlighting.com/proteus-hybrid",
+   "quote": "AC 100-240V - 50/60Hz 700W Max Power Consumption"
+  },
+  {
+   "m": "Elation",
+   "n": "Proteus Lucius",
+   "w": 1000,
+   "url": "https://www.elationlighting.com/proteus-lucius",
+   "quote": "Max Power Consumption 1000W"
+  },
+  {
+   "m": "Elation",
+   "n": "Proteus Maximus",
+   "w": 1400,
+   "url": "https://www.elationlighting.com/proteus-maximus",
+   "quote": "Max Power Consumption 1,400W"
+  },
+  {
+   "m": "Elation",
+   "n": "Proteus Rayzor 760",
+   "w": 700,
+   "url": "https://www.elationlighting.com/proteus-rayzor-760",
+   "quote": "AC 100-240V 50/60Hz 700W Max Power Consumption"
+  },
+  {
+   "m": "Elation",
+   "n": "Rayzor Q12",
+   "w": 240,
+   "url": "https://www.elationlighting.com/rayzor-q12",
+   "quote": "240W Max Power AC 100-240V - 50/60Hz"
+  },
+  {
+   "m": "Elation",
+   "n": "SixPar 200",
+   "w": 150,
+   "url": "https://www.elationlighting.com/sixpar-200",
+   "quote": "AC 110-250V - 50/60Hz 150W Max Power Consumption"
+  },
+  {
+   "m": "Elation",
+   "n": "Smarty Hybrid",
+   "w": 480,
+   "url": "https://www.elationlighting.com/smarty-hybrid",
+   "quote": "AC 100-240V - 50/60Hz 480W Max Power Consumption"
+  },
+  {
+   "m": "Generic",
+   "n": "1 kW cyc flood",
+   "w": 1000,
+   "url": "https://www.theatrecrafts.com/archive/documents/Aurora_Cyc_230V.pdf",
+   "quote": "1.0kW/1.25kW asymmetric flood",
+   "note": "Standard lamp rating (example: Selecon/Strand Aurora Cyc). Some units take 1250 W lamps.",
+   "kind": "rated"
+  },
+  {
+   "m": "Generic",
+   "n": "1 kW Fresnel",
+   "w": 1000,
+   "url": "https://www.arri.com/en/lighting/daylight-tungsten/tungsten/true-blue-t/t1",
+   "quote": "230 V: 1,000 W (FKJ), 650 W (FKH)",
+   "note": "Standard lamp rating (example: ARRI True Blue T1).",
+   "kind": "rated"
+  },
+  {
+   "m": "Generic",
+   "n": "2 kW Fresnel",
+   "w": 2000,
+   "url": "https://www.arri.com/en/lighting/daylight-tungsten/tungsten/true-blue-t/t2",
+   "quote": "CP/41 FKK 2000 W, 230 V",
+   "note": "Standard lamp rating (example: ARRI True Blue T2).",
+   "kind": "rated"
+  },
+  {
+   "m": "Generic",
+   "n": "650 W Fresnel",
+   "w": 650,
+   "url": "https://www.arri.com/en/lighting/tungsten/arri-junior/arri-650-plus",
+   "quote": "Power Consumption 650 W, 500 W, 300 W",
+   "note": "Standard lamp rating (example: ARRI 650 Plus, max 650 W lamp).",
+   "kind": "rated"
+  },
+  {
+   "m": "Generic",
+   "n": "ACL bar (4 × PAR36 250 W)",
+   "w": 1000,
+   "url": "https://shop.boeing.com/cpd/bdi_q5596%3D5v",
+   "quote": "Lamp, Quartz, Sealed Beam, 28 Volt, 250 Watt",
+   "note": "Rated lamp total: 4 × 250 W. A 4-lamp 28 V bar is 112 V in series, so on 240 V two bars are usually run in series (2000 W per pair).",
+   "kind": "rated"
+  },
+  {
+   "m": "Generic",
+   "n": "Molefay 2-lite (2 × 650 W DWE)",
+   "w": 1300,
+   "url": "https://www.mole.com/5721-1300w-two-light-molefay",
+   "quote": "1,300 Watt 2-Light Molefay",
+   "note": "Rated lamp total (2 × 650 W 120 V DWE, series-wired on 240 V).",
+   "kind": "rated"
+  },
+  {
+   "m": "Generic",
+   "n": "PAR36 ACL 250 W",
+   "w": 250,
+   "url": "https://shop.boeing.com/cpd/bdi_q5596%3D5v",
+   "quote": "Lamp, Quartz, Sealed Beam, 28 Volt, 250 Watt",
+   "note": "Standard lamp rating. 28 V lamps are run in series strings (e.g. 8 in series on 240 V).",
+   "kind": "rated"
+  },
+  {
+   "m": "Generic",
+   "n": "PAR56 300 W",
+   "w": 300,
+   "url": "https://steinigke.de/en/mpn88125200-ge-par-56-240v-300w-wfl-gx16d-2000h.html",
+   "quote": "GE PAR 56 240V 300W WFL GX16d 2000h",
+   "note": "Standard lamp rating.",
+   "kind": "rated"
+  },
+  {
+   "m": "Generic",
+   "n": "PAR64 1000 W (CP60/CP61/CP62)",
+   "w": 1000,
+   "url": "https://steinigke.de/en/mpn88147515-philips-cp62-par-64-240v-1000w-mfl-300h.html",
+   "quote": "Philips CP62 PAR 64 240V 1000W MFL 300h",
+   "note": "Standard lamp rating. CP60 (VNSP), CP61 (NSP) and CP62 (MFL) are all 1000 W 240 V.",
+   "kind": "rated"
+  },
+  {
+   "m": "GLP",
+   "n": "impression FR1",
+   "w": 85,
+   "url": "https://glp.de/en/products/entertainment-lighting/moving-lights/impression-fr1-en",
+   "quote": "Power (Watt @ 230V): 85",
+   "note": "Search snippet. User manual Rev G says 80 W max @230 V; using the higher 85 W."
+  },
+  {
+   "m": "GLP",
+   "n": "impression FR10 Bar",
+   "w": 740,
+   "url": "https://glp.de/files/products/impression-fr10-bar-product-data/impression_FR10_Bar_Data_Sheet_EN.pdf",
+   "quote": "Max. Power (@230V) 740 W",
+   "note": "Search snippet; typical 710 W."
+  },
+  {
+   "m": "GLP",
+   "n": "impression S350",
+   "w": 550,
+   "url": "https://glp.de/files/products/impression-s350-product-data/GLP_S350.pdf",
+   "quote": "Power (@ 230 V): 550 W",
+   "note": "Search snippet; product page agrees."
+  },
+  {
+   "m": "GLP",
+   "n": "impression X4",
+   "w": 350,
+   "url": "https://www.glp.de/en/products/impression-x4?pid=&parent=0",
+   "quote": "Power (Watt @ 230V): 350 Watt",
+   "note": "Search snippet of GLP product page (glp.de blocks automated fetching)."
+  },
+  {
+   "m": "GLP",
+   "n": "impression X4 Bar 10",
+   "w": 230,
+   "url": "https://glp.de/de/produkte/entertainment-lighting/moving-lights/impression-x4-bar-10",
+   "quote": "typ. Leistung (@ 230 V) · 230 W",
+   "note": "Search snippet; GLP labels it 'typical'. DMX chart v1.6 says 200 VA (Watt). No separate max figure found — highest published value used."
+  },
+  {
+   "m": "GLP",
+   "n": "impression X4 Bar 20",
+   "w": 450,
+   "url": "https://glp.de/files/products/impression-x4-bar-20-product-data/impression_X4_Bar_20_User_Manual_v1.8_EN.pdf",
+   "quote": "Power consumption 450 VA (Watt)",
+   "note": "Search snippet. Product page lists 400 W typical. Discontinued."
+  },
+  {
+   "m": "GLP",
+   "n": "impression X4 L",
+   "w": 900,
+   "url": "https://glp.de/files/products/impression-x4-l-product-data/GLP_impression_X4_L_User_Manual_EN_Rev_B_20191219.pdf",
+   "quote": "900 VA (Watt)",
+   "note": "Search snippet; product page also 'Power (Watt @ 230V): 900'."
+  },
+  {
+   "m": "GLP",
+   "n": "impression X4 S",
+   "w": 200,
+   "url": "https://glp.de/en/products/entertainment-lighting/moving-lights/impression-x4-s-en",
+   "quote": "Power (Watt @ 230V): 200",
+   "note": "Search snippet. German manual also 200 VA (W); English manual v1.5 says 110 VA — using 200."
+  },
+  {
+   "m": "GLP",
+   "n": "impression X4 XL",
+   "w": 800,
+   "url": "https://www.glp.de/en/products/brands/glp/impression-x4-xl?pid=2&parent=0",
+   "quote": "Power (Watt @ 230V): 800",
+   "note": "Search snippet. Same page reportedly lists Ec 936 kWh/1000h, which is inconsistent with an 800 W max — treat with caution."
+  },
+  {
+   "m": "GLP",
+   "n": "impression X5",
+   "w": 710,
+   "url": "https://glp.de/en/products/entertainment-lighting/moving-lights/impression-x5-en",
+   "quote": "max. Power (@ 230 V) · 710 W",
+   "note": "Search snippet. Safety manual: 704 W @230 V, 718 W @100 V."
+  },
+  {
+   "m": "GLP",
+   "n": "impression X5 IP Bar 1000",
+   "w": 750,
+   "url": "https://glp.de/en/products/entertainment-lighting/moving-lights/impression-x5-ip-bar-1000-en",
+   "quote": "max. Power (@ 230 V) 750 W",
+   "note": "Requested as 'X5 IP Bar 10'; GLP lists the 1 m model as impression X5 IP Bar 1000 (earlier 'X5 IP Bar'). Search snippet — confirm this is the intended model."
+  },
+  {
+   "m": "GLP",
+   "n": "JDC Line 1000",
+   "w": 1600,
+   "url": "https://glp.de/en/products/entertainment-lighting/strobes/jdc-line-1000-en",
+   "quote": "Power (@ 230 V): 1,600 W",
+   "note": "Search snippet. Quick-start manual says 1400 W with all LEDs at 100%; using the higher product-page/catalogue figure."
+  },
+  {
+   "m": "GLP",
+   "n": "JDC Line 500",
+   "w": 800,
+   "url": "https://glp.de/en/products/entertainment-lighting/strobes/jdc-line-500-en",
+   "quote": "max. Power (@ 230V) 800 W",
+   "note": "Search snippet. Quick-start manual says 700 W with all LEDs at 100%; using the higher product-page figure."
+  },
+  {
+   "m": "GLP",
+   "n": "JDC1",
+   "w": 1200,
+   "url": "https://glp.de/en/products/entertainment-lighting/strobes/jdc1-en",
+   "quote": "max. Power (@ 230 V) · 1,200 W",
+   "note": "Search snippet; cut sheet and German page agree."
+  },
+  {
+   "m": "GLP",
+   "n": "JDC2 IP",
+   "w": 1500,
+   "url": "https://glp.de/files/products/jdc2-ip-product-data/GLP_JDC2_IP_Quick_Start_Manual_EN_Rev20240905-09.pdf",
+   "quote": "Maximum power consumption (all effects on): 1500 W",
+   "note": "Search snippet; product page also gives 1,500 W max @230 V."
+  },
+  {
+   "m": "GLP",
+   "n": "KNV Cube",
+   "w": 750,
+   "url": "https://glp.de/en/products/entertainment-lighting/static-lights/knv-cube-en",
+   "quote": "Power (Watt @ 230V): 750 W",
+   "note": "Search snippet."
+  },
+  {
+   "m": "Look Solutions",
+   "n": "Unique 2.1",
+   "w": 1500,
+   "url": "https://www.fullcompass.com/prod/659036-look-solutions-unique-2-1-hazer-restock-item-1500w-haze-machine",
+   "quote": "Power requirement: 1500 W",
+   "note": "Rated heater power, same for 120 V and 230 V versions. Thomann lists the same."
+  },
+  {
+   "m": "Martin",
+   "n": "JEM ZR45",
+   "w": 2100,
+   "url": "https://martin.com/en-US/site_elements/jem-zr45-spec-sheet-english",
+   "quote": "Typical power and current: 2100 W, 9.2 A",
+   "note": "EU 230 V model. Martin calls this 'typical'; main fuse 12.5 AT. Only one per 2400 W circuit."
+  },
+  {
+   "m": "MDG",
+   "n": "theONE",
+   "w": 1480,
+   "url": "https://goknight.com/content/documentation/Product-data-sheet_theONE.pdf",
+   "quote": "1100 - 1480 Watts",
+   "note": "MDG product data sheet; upper end of stated range (100-250 VAC)."
+  },
+  {
+   "m": "Robe",
+   "n": "MegaPointe",
+   "w": 670,
+   "url": "https://www.robe.cz/megapointe",
+   "quote": "Power consumption: 670 W"
+  },
+  {
+   "m": "Selecon",
+   "n": "Acclaim Fresnel / PC",
+   "w": 650,
+   "url": "https://www.theatrecrafts.com/archive/documents/Selecon_Acclaim_Fresnel_PC_UserManual.pdf",
+   "quote": "designed for use with either the T/25 500W or T/27 650W or the FRK 650W lamp",
+   "note": "Max lamp rating 650 W; archived Selecon manual.",
+   "kind": "rated"
+  },
+  {
+   "m": "Selecon",
+   "n": "Pacific 1000 W profile",
+   "w": 1000,
+   "url": "https://www.theatrecrafts.com/archive/documents/pacific_2350.pdf",
+   "quote": "240V BP 1000W lamp",
+   "note": "Lamp rating; archived Selecon datasheet. Lamp modules also come as 600 W and 800 W.",
+   "kind": "rated"
+  },
+  {
+   "m": "Strand",
+   "n": "Cantata (F / PC, 240 V)",
+   "w": 1200,
+   "url": "https://www.theatrecrafts.com/archive/documents/cantatafpc.pdf",
+   "quote": "12034 Cantata F, 240V T29 lamp, 15A plug",
+   "note": "Lamp rating: T29 is 1200 W 240 V (Strand: '41294 T29, 1200W 240V lamp'). The US range was 1000 W.",
+   "kind": "rated"
+  }
+ ]
+}

@@ -6,11 +6,14 @@ It was built in a claude.ai chat as a single-page web app published as a Claude 
 
 ## Current state
 
-- **v2 is in progress on the `v2` branch.** The plan, decisions and build order are in `docs/v2-plan.md`. Stage 1 (jobs with multiple trusses) is done.
+- **v2 is in progress on the `v2` branch.** The plan, decisions and build order are in `docs/v2-plan.md`. Stages 1 (jobs with multiple trusses) and 2 (fixture types and power circuits) are done.
 - **Files, with no build step and no framework.** Plain `<script>` tags, not ES modules, so `index.html` still opens straight from `file://`.
   - `index.html`: markup and CSS
   - `js/spacing.js`: pure spacing maths, unchanged from v1
   - `js/store.js`: jobs, migration, job files
+  - `js/power.js`: pure circuit and Socapex grouping
+  - `js/fixtures-data.js`: the generated fixture wattage database. **Don't edit it by hand**: edit `data/touring-fixtures.json` and run `tools/build-fixtures.py` (instructions at the top of that file).
+  - `js/fixtures.js`: fixture search and "my fixtures"
   - `js/app.js`: UI
 
   Alongside those, only what the PWA needs:
@@ -30,6 +33,7 @@ It was built in a claude.ai chat as a single-page web app published as a Claude 
 - **Tests**: `node --test tests/*.test.js`.
   - `tests/spacing.test.js` checks `js/spacing.js` against 260 cases recorded from v1 in Chromium (`tests/v1-golden.json`). If it fails, the maths has changed.
   - `tests/store.test.js` covers migration and job files.
+  - `tests/power.test.js` covers circuit grouping, including a brute-force check that the balancing is optimal.
 
 ## What the app does
 
@@ -70,6 +74,29 @@ It was built in a claude.ai chat as a single-page web app published as a Claude 
   - Share sends the job through the share sheet. Android won't share `.json`, so it falls back to `.truss.txt`.
   - Open file imports a job with fresh ids.
 - **Saving**: `localStorage["trussSpacerJobs"]`. On first run, v1's `localStorage["trussSpacer"]` becomes the job "My rig". The v1 key is never deleted, because v1 on `main` shares the same origin.
+
+## Fixture types and power (v2 stage 2)
+
+- **Database**: Open Fixture Library wattages (MIT licence, about 614 fixtures), plus `data/touring-fixtures.json`.
+  - The curated list holds common rental fixtures, each with its spec-sheet URL and the exact quote.
+  - `src` codes: `s` = spec sheet, `l` = rated or lamp wattage, `o` = Open Fixture Library, `m` = the user's own, `j` = edited in this job.
+- **Types in a job**: picking a type copies it into `job.types[key]`, so a job file carries its wattages. "Edit W" changes a type's wattage for that job only.
+- **Types per truss**: `truss.fx[i]` is the type key of fixture `i`, counted left to right in physical order (not table order). `ST.typeAt(t, i)` repeats the last entry, so fixtures added later inherit the type before them.
+- **Fixture picker sheet** (`openFx(i)`): opened from the truss's Fixture type button (whole truss) or a circuit cell in the marks table. A single fixture's scope can be This fixture, Every 2nd or Whole truss.
+  - With an empty search it lists "In this job" and "My fixtures".
+  - "Not listed? Add your own" saves to `localStorage["trussSpacerMyFixtures"]`.
+- **Power rules** (`power.js`, settings in `job.settings`):
+  - A circuit is a run of neighbouring fixtures on one truss.
+  - The limit is `circuitW × loadPct%` (default 2400 W × 80% = 1920 W).
+  - Loads are balanced by keeping the heaviest circuit as light as possible.
+  - `perSoca` circuits per Socapex (6). Each truss has its own Socapex run, plus more if needed; lettered A, B and so on, so circuits are A1–A6, B1….
+  - `fill`: `spread` uses every circuit on the truss's Socapex runs; `fewest` uses as few circuits as possible.
+  - `phases`: optional. Picks circuit numbers within each Socapex to balance L1/L2/L3 across the rig (1 and 4 = L1, 2 and 5 = L2, 3 and 6 = L3).
+  - A fixture over the limit sits alone and is flagged. Fixtures with no type count as 0 W and are flagged.
+- **Fixture numbers** in power lists use `fxNo()`, which matches the marks table and reverses when measuring from the right.
+- **Outputs**:
+  - The plot image shows the circuit under each fixture (when there's room), plus Type and Circuit table columns.
+  - The Rig tab has a Power section with per-truss Socapex tables, Copy power, an Export sheet PNG, and Power settings.
 
 ## Code map
 

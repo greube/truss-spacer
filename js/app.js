@@ -4,7 +4,7 @@
 (function(){
   "use strict";
   const $=id=>document.getElementById(id);
-  const SP=window.TS.spacing, ST=window.TS.store;
+  const SP=window.TS.spacing, ST=window.TS.store, PW=window.TS.power, FX=window.TS.fixtures;
   const {UF,ROUNDS}=SP;
   const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
@@ -22,6 +22,33 @@
   const merged=t=>Object.assign({},job.settings,t);
   const tName=(t,i)=>(t.name||"").trim()||`Truss ${(i==null?job.trusses.indexOf(t):i)+1}`;
   const slug=s=>String(s).toLowerCase().replace(/[^a-z0-9.]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40);
+
+  /* ---------- Fixture types and power ---------- */
+  const nOf=t=>Math.max(1,Math.min(99,Math.round(+t.count)||1));
+  const typeOf=(t,i)=>{const k=ST.typeAt(t,i);return k&&job.types[k]?job.types[k]:null};
+  const hasTypes=t=>{for(let i=0;i<nOf(t);i++)if(typeOf(t,i))return true;return false};
+  const anyTypes=()=>job.trusses.some(hasTypes);
+  // Fixture number as shown in the marks table (counts from the right when measuring from the right)
+  const fxNo=(t,i)=>t.ref==="right"?nOf(t)-i:i+1;
+  const W=w=>Math.round(w).toLocaleString("en-AU")+" W";
+  const PHASE=["L1","L2","L3"];
+  let plan=null;
+  function planRig(){
+    plan=PW.planRig(job.trusses.map(t=>({id:t.id,watts:Array.from({length:nOf(t)},(_,i)=>{const ty=typeOf(t,i);return ty?ty.w:null})})),job.settings);
+    return plan;
+  }
+  const planOf=t=>plan&&plan.trusses.find(x=>x.id===t.id);
+  // "1–3, 5" style list of fixture numbers
+  function numList(nums){
+    nums=nums.slice().sort((a,b)=>a-b);const out=[];
+    for(let i=0;i<nums.length;){let j=i;while(j+1<nums.length&&nums[j+1]===nums[j]+1)j++;out.push(j>i+1?`${nums[i]}–${nums[j]}`:j===i+1?`${nums[i]}, ${nums[j]}`:`${nums[i]}`);i=j+1}
+    return out.join(", ");
+  }
+  // "MegaPointe ×4, Aura ×2" for a set of fixtures on a truss
+  function typeSummary(t,idx,full){
+    const c=new Map();idx.forEach(i=>{const ty=typeOf(t,i);const k=ty?(full?FX.label(ty):ty.n):"No type";c.set(k,(c.get(k)||0)+1)});
+    return [...c].map(([k,v])=>v>1?`${k} ×${v}`:k).join(", ");
+  }
 
   let saveWarned=false;
   function save(){
@@ -61,7 +88,7 @@
   $("tname").addEventListener("input",e=>{if(!truss)return;truss.name=e.target.value;save();renderTabs()});
   $("dupTruss").onclick=()=>{
     const i=job.trusses.indexOf(truss);
-    const t=Object.assign({},truss,{id:ST.uid(),name:`${tName(truss,i)} copy`});
+    const t=Object.assign({},truss,{id:ST.uid(),name:`${tName(truss,i)} copy`,fx:(truss.fx||[]).slice()});
     job.trusses.splice(i+1,0,t);openView(t.id);
   };
   $("delTruss").onclick=()=>{
@@ -113,6 +140,7 @@
 
   /* ---------- Render ---------- */
   function render(){
+    planRig();
     renderTabs();
     $("trussView").hidden=!truss; $("rigView").hidden=!!truss;
     if(!truss){renderRig();return}
@@ -143,11 +171,36 @@
         <td><span class="num">${k+1}</span></td>
         <td class="mark">${markTxt(row)}${row.near?'<span class="sub flag">Near a join</span>':""}</td>
         ${showSec?`<td>${fmt(row.off)}<span class="sub">Section ${row.sec}</span></td>`:""}
-        <td>${g}</td></tr>`;
+        <td>${g}</td>${powCell(row)}</tr>`;
     }).join("");
     $("thSec").hidden=!showSec;
+    renderTrussPower(r);
     svgDraw(r);
     window._r=r;
+  }
+
+  function powCell(row){
+    if(!hasTypes(truss)) return "";
+    const ty=typeOf(truss,row.i), c=PW.circuitMap(planOf(truss)).get(row.i);
+    const cls=!ty?" none":c&&c.over?" over":"";
+    return `<td class="pw"><button type="button" class="tcell${cls}" data-fx="${row.i}" aria-label="Fixture ${fxNo(truss,row.i)}: change type"><b>${ty&&c?c.label:"—"}</b><small>${ty?esc(ty.n):"Set type"}</small></button></td>`;
+  }
+  function renderTrussPower(r){
+    const has=hasTypes(truss), n=nOf(truss);
+    $("thPow").hidden=!has;
+    // the type button: one type, mixed, or none yet
+    const keys=new Set();for(let i=0;i<n;i++)keys.add(ST.typeAt(truss,i));
+    const b=$("typeBtn");
+    if(!has){b.classList.add("empty");$("typeName").textContent="Choose fixture type";$("typeMeta").textContent="Search the database or add your own"}
+    else if(keys.size===1){const ty=typeOf(truss,0);b.classList.remove("empty");$("typeName").textContent=FX.label(ty);$("typeMeta").textContent=`${W(ty.w)} each · ${FX.SRC[ty.src]||""} · tap a circuit in the list to change one fixture`}
+    else{b.classList.remove("empty");$("typeName").textContent="Mixed types";$("typeMeta").textContent=typeSummary(truss,Array.from({length:n},(_,i)=>i))}
+    const pn=$("powNote"), pt=planOf(truss);
+    if(!has||!pt){pn.hidden=true;return}
+    const circ=pt.socas.reduce((a,s)=>a+s.circuits.length,0);
+    let h=`Power: <b>${W(pt.load)}</b> on ${circ} circuit${circ>1?"s":""} · Socapex ${pt.socas.map(s=>s.label).join(", ")}`;
+    if(pt.overs.length)h+=` <span class="flag">· ${pt.overs.length} fixture${pt.overs.length>1?"s":""} over the circuit limit on ${pt.overs.length>1?"their":"its"} own</span>`;
+    if(pt.unknown.length)h+=` <span class="flag">· ${pt.unknown.length} with no type</span>`;
+    pn.innerHTML=h;pn.hidden=false;
   }
 
   /* ---------- Rig overview ---------- */
@@ -168,15 +221,118 @@
       const near=r.rows.filter(x=>x.near).length;
       const gap=r.n>1?f(r.pos[1]-r.pos[0]):"—";
       return `<button type="button" class="rigcard" data-t="${t.id}">${head}<span class="rc-len">${f(r.L)}</span>
-        <span class="rc-meta">${esc(t.sections.replace(/\s/g,""))} · ${r.n} fixture${r.n>1?"s":""} · gap ${gap}</span>
+        <span class="rc-meta">${esc(t.sections.replace(/\s/g,""))} · ${r.n} fixture${r.n>1?"s":""} · gap ${gap}${hasTypes(t)?` · ${W(planOf(t).load)}`:""}</span>
         ${miniSvg(r)}
         ${r.warn?`<span class="rc-err">${esc(r.warn)}</span>`:""}${near?`<span class="rc-err">${near} near a join</span>`:""}</button>`;
     }).join("");
     const n=job.trusses.length;
     $("rigNote").textContent=`${n} truss${n>1?"es":""} · ${fx} fixture${fx===1?"":"s"} · ${SP.fmt(len,false,job.settings)} of truss${bad?` · ${bad} need${bad>1?"":"s"} fixing`:""}. Tap a truss to open it.`;
+    renderPower();
     window._r=null;
   }
   $("rigList").addEventListener("click",e=>{const b=e.target.closest(".rigcard");if(b)openView(b.dataset.t)});
+
+  /* ---------- Power: rig sheet ---------- */
+  function renderPower(){
+    const st=job.settings, tot=plan.total, has=anyTypes();
+    $("pwW").value=st.circuitW;$("pwPct").value=st.loadPct;$("pwPer").value=st.perSoca;$("pwPhase").checked=!!st.phases;
+    document.querySelectorAll("#pwFill button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st.fill));
+    $("powerNote").textContent=`Circuits up to ${W(plan.limit)} (${st.loadPct}% of ${W(st.circuitW)}), ${st.perSoca} per Socapex, one Socapex run per truss. Neighbouring fixtures share circuits.`;
+    ["copyPower","exportPower"].forEach(id=>$(id).disabled=!has);
+    $("powerTotal").hidden=!has;
+    if(!has){
+      $("powerList").innerHTML=`<p class="hint">Open a truss and choose its fixture type to work out circuits.</p>`;$("powerWarn").hidden=true;return;
+    }
+    $("powerTotal").innerHTML=`<div><div class="lab">Total</div><div class="v">${W(tot.load)}</div></div>`+
+      `<div><div class="lab">Circuits</div><div class="v">${tot.circuits}</div></div>`+
+      `<div><div class="lab">Socapex</div><div class="v">${tot.socas}</div></div>`+
+      (st.phases?PHASE.map((p,k)=>`<div><div class="lab">${p}</div><div class="v">${W(tot.phase[k])}</div></div>`).join(""):"");
+    const warns=[];
+    if(tot.overs)warns.push(`${tot.overs} fixture${tot.overs>1?"s are":" is"} over the ${W(plan.limit)} circuit limit on ${tot.overs>1?"their":"its"} own. Check the wattage, or raise the limit in Power settings.`);
+    if(tot.unknown)warns.push(`${tot.unknown} fixture${tot.unknown>1?"s have":" has"} no type, so ${tot.unknown>1?"they're":"it's"} counted as 0 W.`);
+    $("powerWarn").hidden=!warns.length;$("powerWarn").innerHTML=warns.map(esc).join("<br>");
+    $("powerList").innerHTML=job.trusses.map((t,ti)=>{
+      if(!hasTypes(t)) return `<div class="pcard"><h3>${esc(tName(t,ti))}<span>no types yet</span></h3></div>`;
+      const pt=planOf(t);
+      const rows=pt.socas.map(so=>`<tr class="soca"><td colspan="${st.phases?5:4}">Socapex ${so.label}</td></tr>`+so.circuits.map(c=>{
+        const pct=c.load/plan.limit*100;
+        return `<tr class="${c.over?"over":""}"><td>${c.label}</td>${st.phases?`<td>${PHASE[c.phase-1]}</td>`:""}
+          <td class="fxs">#${numList(c.fixtures.map(i=>fxNo(t,i)))}<small>${esc(typeSummary(t,c.fixtures))}</small></td>
+          <td>${W(c.load)}<span class="bar${c.over?" over":pct>90?" hi":""}"><i style="width:${Math.min(100,pct).toFixed(0)}%"></i></span></td>
+          <td>${pct.toFixed(0)}%</td></tr>`}).join("")).join("");
+      return `<div class="pcard"><h3>${esc(tName(t,ti))}<span>${W(pt.load)}</span></h3><table>
+        <thead><tr><th>Circuit</th>${st.phases?"<th>Phase</th>":""}<th style="text-align:left">Fixtures</th><th>Load</th><th>%</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    }).join("");
+  }
+  const numIn=(id,key,lo,hi)=>$(id).addEventListener("change",e=>{const v=+e.target.value;if(v>=lo&&v<=hi){put(key,key==="perSoca"?Math.round(v):v);upd()}else e.target.value=job.settings[key]});
+  numIn("pwW","circuitW",100,100000);numIn("pwPct","loadPct",10,100);numIn("pwPer","perSoca",1,12);
+  document.querySelectorAll("#pwFill button").forEach(b=>b.onclick=()=>{put("fill",b.dataset.v);upd()});
+  $("pwPhase").addEventListener("change",e=>{put("phases",e.target.checked);upd()});
+
+  /* ---------- Fixture type picker ---------- */
+  let fxAt=-1, fxScope="all";   // fxAt: fixture index the sheet was opened for, or -1 for the whole truss
+  function openFx(i){
+    if(!truss)return;
+    fxAt=i;fxScope=i<0?"all":"one";
+    $("fxScope").hidden=i<0;
+    $("fxFor").textContent=i<0?`For all ${nOf(truss)} fixtures on ${tName(truss)}.`:`Fixture ${fxNo(truss,i)} on ${tName(truss)}${typeOf(truss,i)?`, now ${FX.label(typeOf(truss,i))}`:""}.`;
+    $("fxClear").hidden=!hasTypes(truss);
+    $("fxSearch").value="";renderFxScope();renderFxList();
+    $("fxSheet").hidden=false;$("fxSearch").focus();
+  }
+  function renderFxScope(){document.querySelectorAll("#fxScope button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===fxScope))}
+  function fxItem(t,key,edit){
+    return `<div class="fxrow"><button type="button" class="fxitem" data-key="${esc(key)}"><b>${esc(FX.label(t))}</b>
+      <small><span class="w">${W(t.w)}</span> · ${esc(FX.SRC[t.src]||"")}</small></button>${edit?`<button type="button" class="fxedit" data-edit="${esc(key)}" aria-label="Change watts for ${esc(FX.label(t))}">Edit W</button>`:""}</div>`;
+  }
+  let fxShown=new Map();   // key -> type, for the items currently listed
+  function renderFxList(){
+    const q=$("fxSearch").value.trim();fxShown=new Map();let h="";
+    if(!q){
+      const used=[...new Set(job.trusses.flatMap(t=>Array.from({length:nOf(t)},(_,i)=>ST.typeAt(t,i))))].filter(k=>k&&job.types[k]);
+      if(used.length){h+=`<div class="fxsec">In this job</div>`+used.map(k=>{fxShown.set(k,job.types[k]);return fxItem(job.types[k],k,true)}).join("")}
+      const my=FX.mine().filter(t=>!used.includes(t.key));
+      if(my.length){h+=`<div class="fxsec">My fixtures</div>`+my.slice(0,30).map(t=>{fxShown.set(t.key,t);return fxItem(t,t.key,false)}).join("")}
+      h+=`<p class="hint">Search ${FX.count().toLocaleString("en-AU")} fixtures by model or manufacturer.</p>`;
+    }else{
+      const res=FX.search(q,40);
+      h+=res.length?res.map(t=>{const jt=job.types[t.key];fxShown.set(t.key,jt||t);return fxItem(jt||t,t.key,!!jt)}).join("")
+        :`<p class="hint">Nothing found for “${esc(q)}”. Check the spelling, try just the model name, or add it below.</p>`;
+    }
+    $("fxList").innerHTML=h;
+  }
+  function assignType(key){
+    const n=nOf(truss), fx=Array.from({length:n},(_,i)=>ST.typeAt(truss,i));
+    for(let i=0;i<n;i++) if(fxScope==="all"||fxAt<0||(fxScope==="one"&&i===fxAt)||(fxScope==="alt"&&(i-fxAt)%2===0)) fx[i]=key;
+    truss.fx=fx;S.fx=fx;
+    $("fxSheet").hidden=true;upd();
+  }
+  function pickType(key,t){
+    if(!job.types[key]) job.types[key]=FX.snapshot(t);
+    assignType(key);
+  }
+  $("fxSearch").addEventListener("input",renderFxList);
+  $("fxScope").addEventListener("click",e=>{const b=e.target.closest("button");if(b){fxScope=b.dataset.v;renderFxScope()}});
+  $("fxList").addEventListener("click",e=>{
+    const ed=e.target.closest("[data-edit]");
+    if(ed){
+      const k=ed.dataset.edit,t=job.types[k];if(!t)return;
+      const v=prompt(`Maximum watts for ${FX.label(t)} in this job:`,t.w);
+      if(v!==null&&+v>0&&+v<100000){t.w=Math.round(+v);t.src="j";upd();renderFxList()}
+      return;
+    }
+    const b=e.target.closest("[data-key]");if(b&&fxShown.has(b.dataset.key))pickType(b.dataset.key,fxShown.get(b.dataset.key));
+  });
+  $("fxAddBtn").onclick=()=>{
+    const m=$("fxM").value.trim(),n=$("fxN").value.trim(),w=+$("fxW").value;
+    if(!n||!(w>0&&w<100000)){alert("Enter at least the model and its maximum watts.");return}
+    const t=FX.addMine(m,n,w);$("fxM").value=$("fxN").value=$("fxW").value="";$("fxAdd").open=false;
+    pickType(t.key,t);
+  };
+  $("fxClear").onclick=()=>assignType("");
+  $("typeBtn").onclick=()=>openFx(-1);
+  $("fxClose").onclick=()=>{$("fxSheet").hidden=true};
+  $("fxSheet").addEventListener("click",e=>{if(e.target.id==="fxSheet")$("fxSheet").hidden=true});
 
   /* ---------- Inputs ---------- */
   function fillRound(){
@@ -234,7 +390,10 @@
   document.querySelectorAll("#ref button").forEach(b=>b.onclick=()=>{put("ref",b.dataset.v);upd()});
 
   function toggleRow(i){if(done.has(i)){done.delete(i);sel=i}else if(sel===i){done.add(i)}else{sel=i}render()}
-  $("rows").addEventListener("click",e=>{const tr=e.target.closest("tr.row");if(tr)toggleRow(+tr.dataset.i)});
+  $("rows").addEventListener("click",e=>{
+    const tc=e.target.closest(".tcell");if(tc){openFx(+tc.dataset.fx);return}
+    const tr=e.target.closest("tr.row");if(tr)toggleRow(+tr.dataset.i);
+  });
   $("svg").addEventListener("click",e=>{const g=e.target.closest("g[data-i]");if(g){sel=+g.dataset.i;render()}});
 
   /* ---------- Copy ---------- */
@@ -242,7 +401,9 @@
     const s=merged(t),r=SP.compute(s),f=(mm,sg)=>SP.fmt(mm,sg,s),name=tName(t);
     if(r.err) return `${name}: ${r.err}`;
     const head=`${name}\nTruss ${s.sections.replace(/\s/g,"")} = ${f(r.L)}, ${r.n} fixtures, gap ${r.n>1?f(r.pos[1]-r.pos[0]):"—"}\nMarks from ${({left:"left end",right:"right end",centre:"centre"})[s.ref]}:`;
-    const body=r.rows.map((row,k)=>`${k+1}. ${SP.markTxt(row,s)}${showSec?`  (sec ${row.sec} +${f(row.off)})`:""}${row.near?" NEAR JOIN":""}`).join("\n");
+    const cm=hasTypes(t)?PW.circuitMap(planOf(t)):null;
+    const pw=row=>{if(!cm)return "";const ty=typeOf(t,row.i),c=cm.get(row.i);return ty?`  ${ty.n}${c?" "+c.label:""}`:"  (no type)"};
+    const body=r.rows.map((row,k)=>`${k+1}. ${SP.markTxt(row,s)}${showSec?`  (sec ${row.sec} +${f(row.off)})`:""}${pw(row)}${row.near?" NEAR JOIN":""}`).join("\n");
     return head+"\n"+body;
   }
   async function copyText(btn,txt,label){
@@ -250,7 +411,21 @@
     setTimeout(()=>btn.textContent=label,1600);
   }
   $("copy").onclick=()=>{if(truss&&window._r&&!window._r.err)copyText($("copy"),trussText(truss),"Copy list")};
-  $("copyRig").onclick=()=>copyText($("copyRig"),`${job.name}\n\n`+job.trusses.map(trussText).join("\n\n"),"Copy rig");
+  $("copyRig").onclick=()=>copyText($("copyRig"),`${job.name}\n\n`+job.trusses.map(trussText).join("\n\n")+(anyTypes()?"\n\n"+powerText():""),"Copy rig");
+  function powerText(){
+    const st=job.settings,tot=plan.total;
+    const lines=[`POWER: ${job.name}`,`Circuits up to ${W(plan.limit)} (${st.loadPct}% of ${W(st.circuitW)}), ${st.perSoca} per Socapex`];
+    job.trusses.forEach((t,ti)=>{
+      if(!hasTypes(t))return;
+      const pt=planOf(t);lines.push("",`${tName(t,ti)}: ${W(pt.load)}`);
+      pt.socas.forEach(so=>{lines.push(`Socapex ${so.label}`);so.circuits.forEach(c=>lines.push(`  ${c.label}${st.phases?" "+PHASE[c.phase-1]:""}  #${numList(c.fixtures.map(i=>fxNo(t,i)))}  ${typeSummary(t,c.fixtures)}  ${W(c.load)}${c.over?"  OVER LIMIT":""}`))});
+    });
+    lines.push("",`Total ${W(tot.load)} (${(tot.load/240).toFixed(1)} A at 240 V) on ${tot.circuits} circuits, ${tot.socas} Socapex`);
+    if(st.phases)lines.push(PHASE.map((p,k)=>`${p} ${W(tot.phase[k])}`).join(", "));
+    if(tot.unknown)lines.push(`${tot.unknown} fixture(s) with no type, counted as 0 W`);
+    return lines.join("\n");
+  }
+  $("copyPower").onclick=()=>copyText($("copyPower"),powerText(),"Copy power");
 
   /* ---------- Export image ---------- */
   const MODE_NAME={edge:"Set end gaps",equal:"Equal gaps",cells:"Centred",fixed:"Fixed gap"};
@@ -306,6 +481,14 @@
       c.beginPath();c.arc(x,y2+95,rad,0,Math.PI*2);c.lineWidth=3;c.strokeStyle=col;c.stroke();
       T(String(numMap.get(row.i)),x,y2+96,`600 ${small?18:24}px ${FM}`,col,"center","middle");
     });
+    // circuit under each fixture, when there's room
+    const cmap=hasTypes(truss)?PW.circuitMap(planOf(truss)):null;
+    if(cmap){
+      let gapMin=Infinity;for(let i=1;i<sorted.length;i++)gapMin=Math.min(gapMin,X(sorted[i].p)-X(sorted[i-1].p));
+      c.font=`600 22px ${FM}`;
+      const wMax=Math.max(...sorted.map(row=>{const cc=cmap.get(row.i);return cc?c.measureText(cc.label).width:0}));
+      if(wMax+12<gapMin) sorted.forEach(row=>{const cc=cmap.get(row.i);if(cc&&typeOf(truss,row.i))T(cc.label,X(row.p),y2+142,`600 22px ${FM}`,cc.over?C.warn:C.accent,"center","middle")});
+    }
 
     // Chain dimensions (gaps)
     const yc=550, pts=[0,...sorted.map(r=>r.p),r.L];
@@ -354,9 +537,10 @@
     c.fillStyle=C.bg;c.fillRect(W/2-ow/2,yo-22,ow,44);T(ov,W/2,yo,`600 30px ${FM}`,C.ink,"center","middle");
 
     // Table
+    const pw=!!cmap;
     const cols=showSec
-      ?[[P,"#","left"],[P+330,`FROM ${REF_NAME[S.ref].toUpperCase()}`,"right"],[P+560,"SECTION","right"],[P+900,"IN SECTION","right"],[P+1240,"GAP","right"],[P+1300,"","left"]]
-      :[[P,"#","left"],[P+330,`FROM ${REF_NAME[S.ref].toUpperCase()}`,"right"],null,null,[P+640,"GAP","right"],[P+700,"","left"]];
+      ?[[P,"#","left"],[P+330,`FROM ${REF_NAME[S.ref].toUpperCase()}`,"right"],[P+560,"SECTION","right"],[P+900,"IN SECTION","right"],[P+1240,"GAP","right"],[pw?P+1800:P+1300,"","left"],pw?[P+1290,"TYPE","left"]:null,pw?[P+1640,"CIRCUIT","left"]:null]
+      :[[P,"#","left"],[P+330,`FROM ${REF_NAME[S.ref].toUpperCase()}`,"right"],null,null,[P+640,"GAP","right"],[pw?P+1500:P+700,"","left"],pw?[P+700,"TYPE","left"]:null,pw?[P+1300,"CIRCUIT","left"]:null];
     const th=tableTop+30;
     cols.forEach(col=>col&&T(col[1],col[0],th,`600 24px ${FB}`,C.muted,col[2]));
     L(P,th+18,W-P,th+18,C.line,2);
@@ -368,7 +552,12 @@
       T(markTxt(row),cols[1][0],cy,`700 32px ${FM}`,row.near?C.warn:C.ink,"right","middle");
       if(showSec){T(String(row.sec),cols[2][0],cy,f,C.ink,"right","middle");T(fmt(row.off),cols[3][0],cy,f,C.ink,"right","middle")}
       T(row.gap!=null?fmt(rnd(row.gap)):"—",cols[4][0],cy,f,C.ink,"right","middle");
-      if(row.near)T("NEAR SECTION JOIN",cols[5][0],cy,`600 24px ${FB}`,C.warn,"left","middle");
+      if(pw){
+        const ty=typeOf(truss,row.i),cc=cmap.get(row.i);
+        T(ty?fit(FX.label(ty),`500 28px ${FB}`,(showSec?330:580)):"No type",cols[6][0],cy,`500 28px ${FB}`,ty?C.ink:C.warn,"left","middle");
+        if(ty&&cc)T(cc.label,cols[7][0],cy,`700 30px ${FM}`,cc.over?C.warn:C.ink,"left","middle");
+      }
+      if(row.near)T(showSec&&pw?"NEAR JOIN":"NEAR SECTION JOIN",cols[5][0],cy,`600 24px ${FB}`,C.warn,"left","middle");
     });
     const fy=th+18+n*rowH+60;
     T(`Rounded to ${S.round?$("round").selectedOptions[0].textContent:"exact values"}.${showSec?`  "In section" is measured from the ${S.ref==="right"?"right":"left"} end of each section; sections numbered from the ${S.ref==="right"?"right":"left"}.`:""}`,P,fy,`400 26px ${FB}`,C.muted);
@@ -399,20 +588,86 @@
   }
 
   /* ---------- Export overlay ---------- */
-  let pngBlob=null, pngUrl=null;
-  const pngName=()=>`truss-plot-${slug(tName(truss))}-${S.sections.replace(/[^\dx.]+/gi,"-").replace(/^-|-$/g,"")}-${window._r.n}fx.png`;
+  let pngBlob=null, pngUrl=null, png={name:"",title:"",text:""};
+  const pngName=()=>png.name;
   const pngFile=()=>new File([pngBlob],pngName(),{type:"image/png"});
-  $("exportBtn").onclick=async()=>{
-    const btn=$("exportBtn");btn.textContent="Drawing…";
-    pngBlob=await buildPng();btn.textContent="Export image";
-    if(!pngBlob)return;
-    if(pngUrl)URL.revokeObjectURL(pngUrl);pngUrl=URL.createObjectURL(pngBlob);
-    $("sheetImg").src=pngUrl;
+  function showPng(blob,meta){
+    pngBlob=blob;png=meta;if(!blob)return;
+    if(pngUrl)URL.revokeObjectURL(pngUrl);pngUrl=URL.createObjectURL(blob);
+    $("sheetImg").src=pngUrl;$("sheetTitle").textContent=meta.heading;
     const share=canShare(pngFile());
     $("shareBtn").hidden=!share;
     $("sheetHint").textContent=share?"Save the PNG, or share it straight to the crew.":"Saves a PNG you can send to the crew or print.";
     $("sheet").hidden=false;$("sheetClose").focus();
+  }
+  $("exportBtn").onclick=async()=>{
+    const btn=$("exportBtn");btn.textContent="Drawing…";
+    const blob=await buildPng();btn.textContent="Export image";
+    if(!blob)return;
+    const r=window._r;
+    showPng(blob,{heading:"Plot image",name:`truss-plot-${slug(tName(truss))}-${S.sections.replace(/[^\dx.]+/gi,"-").replace(/^-|-$/g,"")}-${r.n}fx.png`,
+      title:tName(truss),text:`${tName(truss)}: truss ${S.sections.replace(/\s/g,"")} = ${fmt(r.L)}, ${r.n} fixtures`});
   };
+  $("exportPower").onclick=async()=>{
+    const btn=$("exportPower");btn.textContent="Drawing…";
+    const blob=await buildPowerPng();btn.textContent="Export sheet";
+    showPng(blob,{heading:"Power sheet",name:`power-${slug(job.name)||"job"}.png`,title:`Power: ${job.name}`,text:`Power for ${job.name}: ${W(plan.total.load)} on ${plan.total.circuits} circuits, ${plan.total.socas} Socapex`});
+  };
+
+  async function buildPowerPng(){
+    if(!anyTypes())return null;
+    try{await Promise.all(["400 30px Barlow","500 30px Barlow","600 30px Barlow","700 30px 'Barlow Condensed'","500 30px 'JetBrains Mono'","700 30px 'JetBrains Mono'"].map(f=>document.fonts.load(f)))}catch(e){}
+    const C={bg:"#ffffff",ink:"#16181c",muted:"#666d78",line:"#d8d6cf",band:"#f4f3ef",accent:"#c97f00",warn:"#d13b1c",ok:"#1f8a4f"};
+    const FD="'Barlow Condensed','Arial Narrow',sans-serif", FB="Barlow,Arial,sans-serif", FM="'JetBrains Mono',monospace";
+    const st=job.settings,tot=plan.total,Wd=2400,P=120,rowH=60,headH=96,socaH=48;
+    const list=job.trusses.filter(hasTypes);
+    let H=330+(st.phases?60:0);
+    list.forEach(t=>{const pt=planOf(t);H+=headH+pt.socas.length*socaH+pt.socas.reduce((a,so)=>a+so.circuits.length,0)*rowH+40});
+    H+=90;
+    const cv=document.createElement("canvas");cv.width=Wd;cv.height=H;const c=cv.getContext("2d");
+    const T=(s,x,y,font,col,align="left",base="alphabetic")=>{c.font=font;c.fillStyle=col;c.textAlign=align;c.textBaseline=base;c.fillText(s,x,y)};
+    const fit=(s,font,max)=>{c.font=font;if(c.measureText(s).width<=max)return s;while(s.length>1&&c.measureText(s+"…").width>max)s=s.slice(0,-1);return s+"…"};
+    c.fillStyle=C.bg;c.fillRect(0,0,Wd,H);
+    T("POWER",P,110,`700 76px ${FD}`,C.ink);
+    c.font=`700 76px ${FD}`;const tw=c.measureText("POWER").width;
+    const date=new Date().toLocaleDateString("en-AU",{day:"numeric",month:"short",year:"numeric"});
+    T(fit(job.name,`600 44px ${FB}`,Wd-2*P-tw-420)+"",P+tw+40,108,`600 44px ${FB}`,C.ink);
+    T(date,Wd-P,108,`500 32px ${FB}`,C.muted,"right");
+    T(`Total ${W(tot.load)} (${(tot.load/240).toFixed(1)} A at 240 V)   ·   ${tot.circuits} circuits   ·   ${tot.socas} Socapex`,P,172,`600 36px ${FB}`,C.ink);
+    T(`Circuits loaded to ${W(plan.limit)} (${st.loadPct}% of ${W(st.circuitW)}), ${st.perSoca} per Socapex, one Socapex run per truss.${tot.unknown?`  ${tot.unknown} fixture(s) with no type counted as 0 W.`:""}`,P,222,`400 28px ${FB}`,tot.unknown?C.warn:C.muted);
+    let y=270;
+    if(st.phases){T(PHASE.map((p,k)=>`${p}  ${W(tot.phase[k])}`).join("      "),P,y+10,`600 32px ${FM}`,C.ink);y+=60}
+    const X={circ:P+20,phase:P+230,fx:st.phases?P+400:P+260,load:Wd-P-360,bar:Wd-P-320,pct:Wd-P};
+    const barW=220;
+    list.forEach(t=>{
+      const pt=planOf(t);y+=20;
+      c.fillStyle=C.ink;c.fillRect(P,y,Wd-2*P,headH-24);
+      T(fit(tName(t).toUpperCase(),`700 46px ${FD}`,1300),P+20,y+(headH-24)/2+2,`700 46px ${FD}`,"#ffffff","left","middle");
+      T(`${W(pt.load)}   ·   ${nOf(t)} fixtures`,Wd-P-20,y+(headH-24)/2+2,`600 30px ${FM}`,"#ffffff","right","middle");
+      y+=headH-24+4;
+      pt.socas.forEach(so=>{
+        T(`SOCAPEX ${so.label}`,P+20,y+socaH/2+4,`600 24px ${FB}`,C.muted,"left","middle");
+        y+=socaH;
+        so.circuits.forEach((cc,k)=>{
+          if(k%2){c.fillStyle=C.band;c.fillRect(P,y,Wd-2*P,rowH)}
+          const cy=y+rowH/2+2,col=cc.over?C.warn:C.ink;
+          T(cc.label,X.circ,cy,`700 34px ${FM}`,col,"left","middle");
+          if(st.phases)T(PHASE[cc.phase-1],X.phase,cy,`600 30px ${FM}`,col,"left","middle");
+          const fxTxt=`#${numList(cc.fixtures.map(i=>fxNo(t,i)))}   ${typeSummary(t,cc.fixtures,true)}`;
+          T(fit(fxTxt,`500 30px ${FB}`,X.load-X.fx-260),X.fx,cy,`500 30px ${FB}`,col,"left","middle");
+          T(W(cc.load),X.load,cy,`600 30px ${FM}`,col,"right","middle");
+          const pct=cc.load/plan.limit;
+          c.fillStyle=C.line;c.fillRect(X.bar,cy-6,barW,12);
+          c.fillStyle=cc.over?C.warn:pct>0.9?C.accent:C.ok;c.fillRect(X.bar,cy-6,barW*Math.min(1,pct),12);
+          T(`${Math.round(pct*100)}%`,X.pct,cy,`500 28px ${FM}`,col,"right","middle");
+          y+=rowH;
+        });
+      });
+      y+=20;
+    });
+    T("Fixture numbers match each truss's marks list. Loads use each fixture type's maximum power from the spec sheet; check anything marked as your own entry.",P,H-50,`400 26px ${FB}`,C.muted);
+    return await new Promise(res=>cv.toBlob(res,"image/png"));
+  }
   $("sheetClose").onclick=()=>{$("sheet").hidden=true};
   $("sheet").addEventListener("click",e=>{if(e.target.id==="sheet")$("sheet").hidden=true});
   $("saveBtn").onclick=async()=>{
@@ -423,7 +678,7 @@
     if(!pngBlob)return;
     const r=window._r;
     try{
-      await navigator.share({files:[pngFile()],title:tName(truss),text:`${tName(truss)}: truss ${S.sections.replace(/\s/g,"")} = ${fmt(r.L)}, ${r.n} fixtures`});
+      await navigator.share({files:[pngFile()],title:png.title,text:png.text});
       $("sheetHint").textContent="Shared.";
     }catch(e){
       if(e&&e.name==="AbortError")return; // user closed the share sheet

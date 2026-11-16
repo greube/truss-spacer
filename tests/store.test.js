@@ -9,7 +9,7 @@ test("first run turns v1 settings into a job",()=>{
   localStorage.setItem("trussSpacer",JSON.stringify({sections:"4x2.5",count:9,mode:"fixed",spacing:"1.1",ref:"right",unit:"mm",round:10,joinWarn:"150"}));
   const st=ST.load(), j=st.jobs[st.current];
   assert.equal(j.name,"My rig");
-  assert.deepEqual(j.settings,{unit:"mm",round:10,joinWarn:"150"});
+  assert.deepEqual(j.settings,{unit:"mm",round:10,joinWarn:"150",circuitW:2400,loadPct:80,perSoca:6,fill:"spread",phases:false});
   assert.equal(j.trusses.length,1);
   const t=j.trusses[0];
   assert.equal(t.name,"Truss 1");assert.equal(t.sections,"4x2.5");assert.equal(t.count,9);assert.equal(t.mode,"fixed");assert.equal(t.spacing,"1.1");assert.equal(t.ref,"right");
@@ -36,4 +36,14 @@ test("job files round-trip with fresh ids",()=>{
   assert.throws(()=>ST.fromFile("{}"),/isn't a Truss Spacer job/);
   assert.throws(()=>ST.fromFile("not json"),/isn't a Truss Spacer job/);
   assert.throws(()=>ST.fromFile(JSON.stringify({app:"truss-spacer",format:9,job:{}})),/newer version/);
+});
+
+test("fixture types: cleaned, and new fixtures repeat the last type",()=>{
+  const j=ST.cleanJob({types:{a:{m:"Robe",n:"MegaPointe",w:670,src:"s",url:"https://www.robe.cz/megapointe"},bad:{n:"",w:5},js:{n:"X",w:10,url:"javascript:alert(1)"}},
+    trusses:[{count:4,fx:["a","gone","a"]}]});
+  assert.deepEqual(Object.keys(j.types),["a","js"]);
+  assert.equal(j.types.js.url,"","only http(s) links are kept");
+  assert.deepEqual(j.trusses[0].fx,["a","","a"],"unknown type keys are dropped");
+  assert.equal(ST.typeAt(j.trusses[0],3),"a");
+  assert.equal(ST.typeAt({fx:[]},0),"");
 });

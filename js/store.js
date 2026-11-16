@@ -1,15 +1,19 @@
 /* Truss Spacer: jobs and trusses, saved on the phone.
    localStorage["trussSpacerJobs"] = {current, jobs:{id: job}}
-   job   = {id, name, updated, settings:{unit, round, joinWarn}, trusses:[truss], view: trussId | "rig"}
-   truss = {id, name, sections, count, mode, inset, insetR, diffEnds, spacing, ref}
+   job   = {id, name, updated, settings, types:{key: type}, trusses:[truss], view: trussId | "rig"}
+   settings = {unit, round, joinWarn, circuitW, loadPct, perSoca, fill, phases}
+   type  = {m, n, w, src, url}: a fixture type used in this job, copied in so the job file carries its wattage
+   truss = {id, name, sections, count, mode, inset, insetR, diffEnds, spacing, ref, fx}
+   fx    = type key for each fixture, left to right. Missing entries repeat the last one, so new fixtures
+           take the type of the one before.
    Lengths in a job are stored in that job's unit, as typed (same as v1).
    On first run, v1's single setup (localStorage["trussSpacer"]) becomes the first job. The v1 key is left alone. */
 (function(root){
   "use strict";
   const KEY="trussSpacerJobs", V1_KEY="trussSpacer";
   const MODES=["edge","equal","cells","fixed"], REFS=["left","centre","right"], UNITS=["m","mm","ft"];
-  const SETTINGS_DEFAULT={unit:"m",round:5,joinWarn:100};
-  const TRUSS_DEFAULT={name:"",sections:"3+3+2",count:6,mode:"edge",inset:0.25,insetR:0.25,diffEnds:false,spacing:1.2,ref:"left"};
+  const SETTINGS_DEFAULT={unit:"m",round:5,joinWarn:100,circuitW:2400,loadPct:80,perSoca:6,fill:"spread",phases:false};
+  const TRUSS_DEFAULT={name:"",sections:"3+3+2",count:6,mode:"edge",inset:0.25,insetR:0.25,diffEnds:false,spacing:1.2,ref:"left",fx:[]};
   // Sensible starting lengths for a new truss in each unit
   const UNIT_DEFAULT={m:{sections:"3+3+2",inset:0.25,insetR:0.25,spacing:1.2},
                       mm:{sections:"3000+3000+2000",inset:250,insetR:250,spacing:1200},
@@ -21,9 +25,21 @@
 
   function cleanSettings(s){
     s=s&&typeof s==="object"?s:{};
-    return {unit:UNITS.includes(s.unit)?s.unit:"m",round:isNum(s.round)?+s.round:5,joinWarn:isNum(s.joinWarn)?s.joinWarn:100};
+    const clamp=(v,lo,hi,d)=>isNum(v)?Math.max(lo,Math.min(hi,+v)):d;
+    return {unit:UNITS.includes(s.unit)?s.unit:"m",round:isNum(s.round)?+s.round:5,joinWarn:isNum(s.joinWarn)?s.joinWarn:100,
+      circuitW:clamp(s.circuitW,100,100000,2400),loadPct:clamp(s.loadPct,10,100,80),perSoca:Math.round(clamp(s.perSoca,1,12,6)),
+      fill:s.fill==="fewest"?"fewest":"spread",phases:!!s.phases};
   }
-  function cleanTruss(t,unit){
+  function cleanTypes(ts){
+    const out={};
+    if(ts&&typeof ts==="object") for(const k of Object.keys(ts).slice(0,500)){
+      const t=ts[k];if(!t||typeof t!=="object"||typeof t.n!=="string"||!t.n.trim()||!(isNum(t.w)&&+t.w>0)) continue;
+      out[String(k).slice(0,120)]={m:typeof t.m==="string"?t.m.slice(0,60):"",n:t.n.slice(0,80),w:Math.min(100000,Math.round(+t.w)),
+        src:["s","l","o","m","j"].includes(t.src)?t.src:"j",url:typeof t.url==="string"&&/^https?:\/\//.test(t.url)?t.url.slice(0,300):""};
+    }
+    return out;
+  }
+  function cleanTruss(t,unit,types){
     t=t&&typeof t==="object"?t:{};
     const d=Object.assign({},TRUSS_DEFAULT,UNIT_DEFAULT[unit]||UNIT_DEFAULT.m);
     const o={id:typeof t.id==="string"&&t.id?t.id:uid()};
@@ -35,22 +51,23 @@
     o.diffEnds=!!t.diffEnds;
     // kept as typed (string or number), like v1, so a half-typed "0." survives a reload
     for(const k of ["inset","insetR","spacing"]) o[k]=(typeof t[k]==="string"&&t[k].length<20)||typeof t[k]==="number"?t[k]:d[k];
+    o.fx=(Array.isArray(t.fx)?t.fx:[]).slice(0,99).map(k=>typeof k==="string"&&(!types||types[k])?k:"");
     return o;
   }
   function cleanJob(j){
     j=j&&typeof j==="object"?j:{};
-    const settings=cleanSettings(j.settings);
-    const trusses=(Array.isArray(j.trusses)?j.trusses:[]).slice(0,200).map(t=>cleanTruss(t,settings.unit));
+    const settings=cleanSettings(j.settings), types=cleanTypes(j.types);
+    const trusses=(Array.isArray(j.trusses)?j.trusses:[]).slice(0,200).map(t=>cleanTruss(t,settings.unit,types));
     if(!trusses.length) trusses.push(cleanTruss({name:"Truss 1"},settings.unit));
     const view=j.view==="rig"||trusses.some(t=>t.id===j.view)?j.view:trusses[0].id;
     return {id:typeof j.id==="string"&&j.id?j.id:uid(),name:typeof j.name==="string"&&j.name.trim()?j.name.slice(0,80):"Untitled job",
-            updated:isNum(j.updated)?+j.updated:Date.now(),settings,trusses,view};
+            updated:isNum(j.updated)?+j.updated:Date.now(),settings,types,trusses,view};
   }
 
-  function newTruss(unit,over){return cleanTruss(Object.assign({},UNIT_DEFAULT[unit]||UNIT_DEFAULT.m,over||{},{id:uid()}),unit)}
+  function newTruss(unit,over){return cleanTruss(Object.assign({},UNIT_DEFAULT[unit]||UNIT_DEFAULT.m,over||{},{id:uid()}),unit,null)}
   function newJob(name,settings){
     const s=cleanSettings(settings), t=newTruss(s.unit,{name:"Truss 1"});
-    return {id:uid(),name:name||"New job",updated:Date.now(),settings:s,trusses:[t],view:t.id};
+    return {id:uid(),name:name||"New job",updated:Date.now(),settings:s,types:{},trusses:[t],view:t.id};
   }
 
   function fromV1(){
@@ -84,7 +101,10 @@
     return j;
   }
 
-  const api={SETTING_KEYS,TRUSS_KEYS,uid,newTruss,newJob,cleanJob,load,save,toFile,fromFile};
+  // Type key of fixture i (left to right); fixtures past the end of fx take the last one's type
+  function typeAt(t,i){const fx=t.fx||[];return i<fx.length?fx[i]:fx.length?fx[fx.length-1]:""}
+
+  const api={SETTING_KEYS,TRUSS_KEYS,typeAt,uid,newTruss,newJob,cleanJob,load,save,toFile,fromFile};
   root.TS=root.TS||{}; root.TS.store=api;
   if(typeof module!=="undefined") module.exports=api;
 })(typeof window!=="undefined"?window:globalThis);
