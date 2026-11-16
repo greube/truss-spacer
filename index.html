@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>
+/* Base reset (previously injected by the claude.ai artifact host) */
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>Truss Spacer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#121418">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one narrow working column, controls on top, truss drawing, then a tap-to-mark cue list. Dark-first for dim venues, light for daylight load-ins. */
+:root{
+  --bg:#121418; --panel:#1b1e24; --line:#2c313a; --fg:#e9e6df; --muted:#9097a3;
+  --accent:#ffb21e; --accent-ink:#1a1204; --truss:#c9ccd2; --warn:#ff6b4a; --ok:#5fcf8f;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-num:"JetBrains Mono",ui-monospace,"Roboto Mono",monospace;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --bg:#f3f2ee; --panel:#ffffff; --line:#d8d6cf; --fg:#17191d; --muted:#5d636d;
+  --accent:#d98a00; --accent-ink:#ffffff; --truss:#3a3f48; --warn:#d13b1c; --ok:#1f8a4f; color-scheme:light}}
+:root[data-theme="light"]{
+  --bg:#f3f2ee; --panel:#ffffff; --line:#d8d6cf; --fg:#17191d; --muted:#5d636d;
+  --accent:#d98a00; --accent-ink:#ffffff; --truss:#3a3f48; --warn:#d13b1c; --ok:#1f8a4f; color-scheme:light}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.4;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 40px}
+.wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--f-display);font-weight:700;font-size:30px;letter-spacing:.02em;text-transform:uppercase;margin:0;line-height:1}
+h1 span{color:var(--accent)}
+.toggle{font:600 13px var(--f-body);letter-spacing:.06em;text-transform:uppercase;background:transparent;color:var(--muted);
+  border:1px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer;min-height:40px}
+.toggle[aria-pressed="true"]{color:var(--accent-ink);background:var(--accent);border-color:var(--accent)}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:420px){.grid2{grid-template-columns:1fr}}
+label.f{display:grid;gap:6px;min-width:0}
+.lab{font:600 12px var(--f-body);letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.lab em{font-style:normal;text-transform:none;letter-spacing:0;font-weight:400}
+input[type=text],input[type=number],select{width:100%;font:600 20px var(--f-num);color:var(--fg);background:var(--bg);
+  border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-height:50px}
+select{font:500 17px var(--f-body)}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.stepper{display:grid;grid-template-columns:50px 1fr 50px;gap:6px}
+.stepper input{text-align:center}
+.stepper button{font:600 26px var(--f-num);background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;cursor:pointer}
+.stepper button:active{background:var(--accent);color:var(--accent-ink)}
+
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{flex:1 1 0;min-width:0;font:600 14px var(--f-body);background:var(--bg);color:var(--fg);border:1px solid var(--line);
+  border-radius:8px;padding:10px 6px;min-height:46px;cursor:pointer;line-height:1.15}
+.seg button small{display:block;font-weight:400;font-size:11px;color:var(--muted);margin-top:2px}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.seg button[aria-pressed="true"] small{color:var(--accent-ink);opacity:.8}
+details summary{cursor:pointer;font:600 13px var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:4px 0}
+details[open] summary{margin-bottom:12px}
+
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.summary div{background:var(--panel);padding:10px 12px;min-width:0}
+.summary .v{font:600 clamp(15px,4.2vw,20px) var(--f-num);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.summary .v.big{color:var(--accent)}
+.summary .v.two{font-size:clamp(13px,3.6vw,15px);white-space:pre;line-height:1.3}
+.msg{font-size:14px;border-radius:8px;padding:10px 12px;border:1px solid var(--warn);color:var(--warn)}
+
+.drawing{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 8px 4px;overflow-x:auto}
+.drawing svg{display:block;width:100%;height:auto;min-width:320px}
+
+.listhead{display:flex;justify-content:space-between;align-items:end;gap:10px;flex-wrap:wrap}
+.listhead h2{font-family:var(--f-display);font-weight:600;font-size:22px;text-transform:uppercase;letter-spacing:.03em;margin:0}
+.listhead p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.copy{font:600 14px var(--f-body);background:transparent;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;min-height:42px;cursor:pointer}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{font:600 11px var(--f-body);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);text-align:right;padding:6px 8px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+td{font:500 17px var(--f-num);text-align:right;padding:12px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td.mark{font-size:20px;font-weight:600}
+td .sub{display:block;font:400 12px var(--f-body);color:var(--muted);margin-top:2px}
+tr.row{cursor:pointer}
+tr.row.done td{color:var(--muted)}
+tr.row.done td.mark{text-decoration:line-through}
+tr.row.sel td{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.num{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--fg);font:600 14px var(--f-num)}
+tr.done .num{border-color:var(--ok);background:var(--ok);color:var(--bg)}
+.flag{color:var(--warn);font:600 11px var(--f-body);letter-spacing:.05em;text-transform:uppercase}
+.tablewrap{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+.switch{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;cursor:pointer;padding:4px 0;position:relative}
+.switch input{position:absolute;opacity:0;width:1px;height:1px}
+.track{width:52px;height:30px;border-radius:999px;background:var(--bg);border:1px solid var(--line);position:relative;transition:background .15s}
+.track::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--muted);transition:transform .15s,background .15s}
+.switch input:checked+.track{background:var(--accent);border-color:var(--accent)}
+.switch input:checked+.track::after{transform:translateX(22px);background:var(--accent-ink)}
+.switch input:focus-visible+.track{outline:2px solid var(--accent);outline-offset:2px}
+.swtxt{display:grid;gap:2px;min-width:0}
+.swtxt b{font-weight:600;font-size:15px}
+.swtxt small{color:var(--muted);font-size:13px;line-height:1.35}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{-webkit-tap-highlight-color:transparent;font:600 16px var(--f-num);background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;
+  min-width:46px;min-height:42px;padding:6px 10px;cursor:pointer;font-variant-numeric:tabular-nums}
+.chips button:active{background:var(--accent);color:var(--accent-ink)}
+.chips .k{color:var(--accent);font-size:20px}
+.chips .act{font:600 13px var(--f-body);color:var(--muted);letter-spacing:.04em}
+.endrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.check{-webkit-tap-highlight-color:transparent;display:flex;align-items:center;gap:10px;font-size:15px;cursor:pointer;min-height:36px}
+.check input{width:22px;height:22px;accent-color:var(--accent);margin:0}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.copy.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.sheet{position:fixed;inset:0;z-index:20;background:color-mix(in srgb,var(--bg) 85%,transparent);display:grid;place-items:center;
+  padding:calc(12px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.sheetbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;width:100%;max-width:720px;max-height:100%;display:grid;gap:12px;grid-template-rows:auto minmax(0,1fr) auto auto}
+.sheethead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sheethead h2{font-family:var(--f-display);font-weight:600;font-size:22px;text-transform:uppercase;margin:0}
+.sheetimg{overflow:auto;border-radius:6px;background:#fff;min-height:0}
+.sheetimg img{display:block;width:100%;height:auto}
+.hint{margin:0;color:var(--muted);font-size:14px}
+footer{color:var(--muted);font-size:13px;line-height:1.5}
+footer b{color:var(--fg);font-weight:600}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Truss <span>Spacer</span></h1>
+    <button class="toggle" id="wake" aria-pressed="false" type="button">Keep screen on</button>
+  </header>
+
+  <section class="panel" aria-label="Setup">
+    <div class="grid2">
+      <div class="f" style="display:grid;gap:6px;min-width:0">
+        <label class="lab" for="sections">Truss sections <em>tap sizes or type</em></label>
+        <input type="text" id="sections" inputmode="decimal" autocomplete="off" value="3+3+2">
+        <div class="chips" id="chips" role="group" aria-label="Add truss sections"></div>
+      </div>
+      <div class="f" style="display:grid;gap:6px"><span class="lab">Fixtures</span>
+        <div class="stepper">
+          <button type="button" id="minus" aria-label="One fewer fixture">−</button>
+          <input type="number" id="count" min="1" max="99" value="6" inputmode="numeric" aria-label="Number of fixtures">
+          <button type="button" id="plus" aria-label="One more fixture">+</button>
+        </div></div>
+    </div>
+
+    <div class="f" style="display:grid;gap:6px"><span class="lab">Layout</span>
+      <div class="seg" id="mode">
+        <button type="button" data-v="edge">Set end gaps<small>you choose the ends</small></button>
+        <button type="button" data-v="equal">Equal gaps<small>ends = gap</small></button>
+        <button type="button" data-v="cells">Centred<small>ends = ½ gap</small></button>
+        <button type="button" data-v="fixed">Fixed gap<small>centred on truss</small></button>
+      </div></div>
+
+    <div class="grid2">
+      <div class="f" id="insetWrap" style="display:grid;gap:8px">
+        <div class="endrow">
+          <label class="f"><span class="lab"><span id="insetLab">End gap</span> <em class="u">m</em></span>
+            <input type="number" id="inset" step="any" min="0" value="0.25" inputmode="decimal"></label>
+          <label class="f" id="insetRWrap" hidden><span class="lab">Right end <em class="u">m</em></span>
+            <input type="number" id="insetR" step="any" min="0" value="0.25" inputmode="decimal"></label>
+        </div>
+        <label class="check" for="diffEnds"><input type="checkbox" id="diffEnds"> Different gap each end</label>
+      </div>
+      <label class="f" id="spacingWrap" hidden><span class="lab">Gap between fixtures <em class="u">m</em></span>
+        <input type="number" id="spacing" step="any" min="0" value="1.2" inputmode="decimal"></label>
+      <div class="f" style="display:grid;gap:6px"><span class="lab">Measure from</span>
+        <div class="seg" id="ref">
+          <button type="button" data-v="left">Left end</button>
+          <button type="button" data-v="centre">Centre</button>
+          <button type="button" data-v="right">Right end</button>
+        </div></div>
+    </div>
+
+    <label class="switch" for="showSec">
+      <input type="checkbox" id="showSec">
+      <span class="track" aria-hidden="true"></span>
+      <span class="swtxt"><b>In-section distances</b><small>Show each mark measured within its own truss section, in the list, copied text and image</small></span>
+    </label>
+
+    <details>
+      <summary>Units &amp; tape settings</summary>
+      <div class="grid2">
+        <label class="f"><span class="lab">Units</span>
+          <select id="unit"><option value="m">Metres</option><option value="mm">Millimetres</option><option value="ft">Feet &amp; inches</option></select></label>
+        <label class="f"><span class="lab">Round marks to</span>
+          <select id="round"></select></label>
+        <label class="f"><span class="lab">Warn near section join <em>mm</em></span>
+          <input type="number" id="joinWarn" min="0" step="10" value="100" inputmode="numeric"></label>
+      </div>
+    </details>
+  </section>
+
+  <div class="summary" aria-live="polite">
+    <div><div class="lab">Truss</div><div class="v" id="sLen">–</div></div>
+    <div><div class="lab">Gap</div><div class="v big" id="sGap">–</div></div>
+    <div><div class="lab" id="sEndLab">Each end</div><div class="v" id="sEnd">–</div></div>
+  </div>
+  <div class="msg" id="msg" hidden></div>
+
+  <div class="drawing"><svg id="svg" viewBox="0 0 1000 150" role="img" aria-label="Truss with fixture positions"></svg></div>
+
+  <section style="display:grid;gap:10px">
+    <div class="listhead">
+      <div><h2>Marks</h2><p id="refNote">Measured from the left end. Tap a row to tick it off.</p></div>
+      <div class="btns">
+        <button class="copy" id="copy" type="button">Copy list</button>
+        <button class="copy primary" id="exportBtn" type="button">Export image</button>
+      </div>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th id="thMark">From left</th><th id="thSec" hidden>In section</th><th>Gap</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table></div>
+  </section>
+
+  <div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheetbox">
+      <div class="sheethead">
+        <h2 id="sheetTitle">Plot image</h2>
+        <button class="copy" id="sheetClose" type="button">Close</button>
+      </div>
+      <div class="sheetimg"><img id="sheetImg" alt="Truss plot with fixture measurements"></div>
+      <p class="hint" id="sheetHint"></p>
+      <div class="btns"><button class="copy primary" id="saveBtn" type="button">Save PNG</button></div>
+    </div>
+  </div>
+
+  <footer>
+    <b>Set end gaps</b>: you choose the distance from each end of the truss to the first and last fixture, and the rest are spaced evenly between. <b>Equal gaps</b>: the space at each end matches the gap between fixtures. <b>Centred</b>: each fixture sits in the middle of an equal share of truss, so the ends get half a gap. <b>Fixed gap</b>: you set the gap and the group is centred.<br>
+    Turn on <b>In-section distances</b> to also get each mark measured from the end of the section it lands on (the end nearest where you measure from), so you can tape a single section on the deck. Fixtures close to a join get a flag, since clamps can foul the couplers.
+  </footer>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const S={sections:"3+3+2",count:6,mode:"edge",inset:0.25,insetR:0.25,diffEnds:false,spacing:1.2,ref:"left",unit:"m",round:5,joinWarn:100};
+  try{Object.assign(S,JSON.parse(localStorage.getItem("trussSpacer")||"{}"))}catch(e){}
+  let done=new Set(), sel=-1, lastKey="";
+  let showSec=false; // deliberately not saved: starts off every time the app opens
+
+  const UF={m:1000,mm:1,ft:304.8};
+  const ROUNDS={metric:[[0,"No rounding"],[1,"1 mm"],[5,"5 mm"],[10,"10 mm"],[25,"25 mm"],[50,"50 mm"]],
+                ft:[[0,"No rounding"],[3.175,"1/8 in"],[6.35,"1/4 in"],[12.7,"1/2 in"],[25.4,"1 in"]]};
+
+  function save(){try{localStorage.setItem("trussSpacer",JSON.stringify(S))}catch(e){}}
+
+  function fmt(mm,signed){
+    const neg=mm<0; let a=Math.abs(mm); let s;
+    if(S.unit==="mm") s=Math.round(a)+"";
+    else if(S.unit==="m") s=(a/1000).toFixed(S.round>=10?2:3)+" m";
+    else{
+      const step=S.round||3.175/2; const inches=Math.round(a/25.4/(step/25.4))*(step/25.4);
+      let ft=Math.floor(inches/12+1e-9), inch=inches-ft*12;
+      let whole=Math.floor(inch+1e-9), frac=inch-whole, den=16, n=Math.round(frac*den);
+      if(n===den){whole++;n=0} if(whole===12){ft++;whole=0}
+      while(n&&n%2===0&&den>1){n/=2;den/=2}
+      s=ft+"′ "+whole+(n?" "+n+"/"+den:"")+"″";
+    }
+    if(S.unit==="mm") s+=" mm";
+    return (signed&&neg?"−":"")+s;
+  }
+  const rnd=mm=>S.round?Math.round(mm/S.round)*S.round:mm;
+
+  function parseSections(str){
+    const parts=String(str).replace(/[,\-]/g,"+").split(/[+\s]+/).filter(Boolean);
+    const out=[];
+    for(const p of parts){
+      const m=p.match(/^(\d+)[x×*](\d*\.?\d+)$/i);
+      if(m){for(let i=0;i<+m[1];i++)out.push(+m[2]*UF[S.unit])}
+      else{const v=parseFloat(p); if(!(v>0))return null; out.push(v*UF[S.unit])}
+    }
+    return out.length?out:null;
+  }
+
+  function compute(){
+    const secs=parseSections(S.sections); if(!secs) return {err:"Enter the truss as section lengths, e.g. 3+3+2 or 4x2.5"};
+    const L=secs.reduce((a,b)=>a+b,0), n=Math.max(1,Math.min(99,Math.round(S.count)||1));
+    const ins=(+S.inset||0)*UF[S.unit], sp=(+S.spacing||0)*UF[S.unit];
+    let pos=[], warn="";
+    if(S.mode==="edge"){
+      const insR=S.diffEnds?(+S.insetR||0)*UF[S.unit]:ins, b=L-insR;
+      if(ins+insR>=L) return {err:"The end gaps add up to more than the truss length."};
+      pos=n===1?[(ins+b)/2]:Array.from({length:n},(_,i)=>ins+i*(b-ins)/(n-1));
+    }else if(S.mode==="equal"){const g=L/(n+1);pos=Array.from({length:n},(_,i)=>(i+1)*g)}
+    else if(S.mode==="cells"){const c=L/n;pos=Array.from({length:n},(_,i)=>(i+.5)*c)}
+    else{
+      if(!(sp>0)) return {err:"Enter the gap you want between fixtures."};
+      const start=(L-(n-1)*sp)/2; pos=Array.from({length:n},(_,i)=>start+i*sp);
+      if(start<0){const fit=Math.floor(L/sp+1e-9)+1; warn=`${n} fixtures at that gap is longer than the truss. Up to ${fit} will fit.`}
+    }
+    const joins=[];let acc=0;secs.forEach((s,i)=>{if(i)joins.push(acc);acc+=s});
+    const jw=+S.joinWarn||0;
+    const rows=pos.map((p,i)=>{
+      let si=0,a=0; while(si<secs.length-1&&p>=a+secs[si]){a+=secs[si];si++}
+      const near=joins.some(j=>Math.abs(j-p)<jw);
+      let d=S.ref==="left"?p:S.ref==="right"?L-p:p-L/2;
+      const fromR=S.ref==="right";
+      return {i,p,mark:rnd(d),sec:fromR?secs.length-si:si+1,off:rnd(fromR?a+secs[si]-p:p-a),near};
+    });
+    if(S.ref==="right") rows.reverse();
+    rows.forEach((row,k)=>row.gap=k?Math.abs(row.p-rows[k-1].p):null);
+    return {L,secs,joins,pos,rows,warn,n};
+  }
+
+  function svgDraw(r){
+    const svg=$("svg"); const W=1000,P=34,y1=40,y2=70,sc=(W-2*P)/r.L,X=p=>P+p*sc;
+    const cs=getComputedStyle(document.documentElement);
+    let h=`<g stroke="var(--truss)" fill="none">`;
+    h+=`<line x1="${P}" y1="${y1}" x2="${W-P}" y2="${y1}" stroke-width="4"/><line x1="${P}" y1="${y2}" x2="${W-P}" y2="${y2}" stroke-width="4"/>`;
+    let x=P,acc=0; const step=30;
+    r.secs.forEach((s,k)=>{
+      const x0=X(acc),x1=X(acc+s); let d="";
+      const cnt=Math.max(1,Math.round((x1-x0)/step)), w=(x1-x0)/cnt;
+      for(let i=0;i<cnt;i++){d+=`M${(x0+i*w).toFixed(1)},${i%2?y1:y2}L${(x0+(i+1)*w).toFixed(1)},${i%2?y2:y1}`}
+      h+=`<path d="${d}" stroke-width="1.5" opacity=".6"/>`;
+      acc+=s;
+    });
+    h+=`</g>`;
+    [0,...r.joins,r.L].forEach(j=>{h+=`<rect x="${X(j)-3}" y="${y1-6}" width="6" height="${y2-y1+12}" fill="var(--truss)"/>`});
+    acc=0;r.secs.forEach((s,k)=>{h+=`<text x="${X(acc+s/2)}" y="${y1-12}" text-anchor="middle" font-family="var(--f-num)" font-size="15" fill="var(--muted)">${fmt(s)}</text>`;acc+=s});
+    const showNum=r.n<=24;
+    r.rows.slice().sort((a,b)=>a.p-b.p).forEach((row,k)=>{
+      const cx=X(row.p), on=row.i===sel, dn=done.has(row.i);
+      const col=row.near?"var(--warn)":on?"var(--accent)":dn?"var(--ok)":"var(--fg)";
+      h+=`<g data-i="${row.i}" style="cursor:pointer"><line x1="${cx}" y1="${y2}" x2="${cx}" y2="${y2+12}" stroke="${col}" stroke-width="3"/>`+
+         `<path d="M${cx-9},${y2+12}h18l-4,24h-10z" fill="${dn||on?col:"none"}" stroke="${col}" stroke-width="2.5"/>`;
+      if(showNum) h+=`<text x="${cx}" y="${y2+56}" text-anchor="middle" font-family="var(--f-num)" font-weight="600" font-size="15" fill="${col}">${rowNo(row)}</text>`;
+      h+=`<rect x="${cx-14}" y="${y1}" width="28" height="100" fill="transparent"/></g>`;
+    });
+    const lx=S.ref==="right"?W-P:S.ref==="centre"?W/2:P;
+    if(S.ref==="centre") h+=`<line x1="${W/2}" y1="${y1-4}" x2="${W/2}" y2="${y2+4}" stroke="var(--accent)" stroke-dasharray="4 4" stroke-width="2"/>`;
+    h+=`<text x="${lx}" y="${146}" text-anchor="${S.ref==="right"?"end":S.ref==="centre"?"middle":"start"}" font-family="var(--f-body)" font-size="13" font-weight="600" letter-spacing="1.5" fill="var(--accent)">▲ 0 HERE</text>`;
+    svg.innerHTML=h;
+  }
+  let numMap=new Map();
+  const rowNo=row=>numMap.get(row.i);
+
+  function render(){
+    const r=compute();
+    document.querySelectorAll(".u").forEach(e=>e.textContent=S.unit);
+    $("insetWrap").hidden=S.mode!=="edge";
+    $("insetRWrap").hidden=!S.diffEnds; $("insetLab").textContent=S.diffEnds?"Left end":"End gap"; $("spacingWrap").hidden=S.mode!=="fixed";
+    document.querySelectorAll("#mode button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===S.mode));
+    document.querySelectorAll("#ref button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===S.ref));
+    const msg=$("msg");
+    if(r.err){msg.hidden=false;msg.textContent=r.err;$("rows").innerHTML="";$("svg").innerHTML="";["sLen","sGap","sEnd"].forEach(i=>$(i).textContent="–");return}
+    msg.hidden=!r.warn; msg.textContent=r.warn;
+    const key=[S.sections,S.count,S.mode,S.inset,S.insetR,S.diffEnds,S.spacing,S.unit].join("|");
+    if(key!==lastKey){done.clear();sel=-1;lastKey=key}
+    numMap=new Map(r.rows.map((row,k)=>[row.i,k+1]));
+    const gap=r.n>1?r.pos[1]-r.pos[0]:null;
+    $("sLen").textContent=fmt(r.L); $("sGap").textContent=gap!=null?fmt(gap):"—"; {const eL=r.pos[0],eR=r.L-r.pos[r.pos.length-1],same=Math.abs(eL-eR)<0.5;
+      $("sEnd").textContent=same?fmt(eL):`L ${fmt(eL)}\nR ${fmt(eR)}`;$("sEnd").classList.toggle("two",!same);
+      $("sEndLab").textContent=same?"Each end":"Ends";}
+    const refTxt={left:"the left end",right:"the right end",centre:"the centre of the truss (− is left, + is right)"}[S.ref];
+    $("refNote").textContent=`Measured from ${refTxt}. Tap a row to tick it off.`;
+    $("thMark").textContent={left:"From left",right:"From right",centre:"From centre"}[S.ref];
+    $("rows").innerHTML=r.rows.map((row,k)=>{
+      const g=row.gap!=null?fmt(row.gap):"—";
+      const m=S.ref==="centre"&&row.mark>0?"+"+fmt(row.mark):fmt(row.mark,true);
+      return `<tr class="row${done.has(row.i)?" done":""}${row.i===sel?" sel":""}" data-i="${row.i}">
+        <td><span class="num">${k+1}</span></td>
+        <td class="mark">${m}${row.near?'<span class="sub flag">Near a join</span>':""}</td>
+        ${showSec?`<td>${fmt(row.off)}<span class="sub">Section ${row.sec}</span></td>`:""}
+        <td>${g}</td></tr>`;
+    }).join("");
+    $("thSec").hidden=!showSec;
+    svgDraw(r);
+    window._r=r;
+  }
+
+  function fillRound(){
+    const list=S.unit==="ft"?ROUNDS.ft:ROUNDS.metric;
+    if(!list.some(o=>o[0]==S.round)) S.round=S.unit==="ft"?3.175:5;
+    $("round").innerHTML=list.map(o=>`<option value="${o[0]}"${o[0]==S.round?" selected":""}>${o[1]}</option>`).join("");
+  }
+
+  const CHIP_SIZES={m:[1,1.5,2,2.5,3,4],mm:[1000,1500,2000,2500,3000,4000],ft:[4,5,8,10]};
+  function fillChips(){
+    $("chips").innerHTML=`<button type="button" class="k" data-k="+" aria-label="Type a plus sign">+</button>`+
+      CHIP_SIZES[S.unit].map(v=>`<button type="button" data-add="${v}" aria-label="Add a ${v} ${S.unit} section">${v}</button>`).join("")+
+      `<button type="button" class="act" data-k="back" aria-label="Remove last section">⌫</button><button type="button" class="act" data-k="clear">Clear</button>`;
+  }
+  $("chips").addEventListener("click",e=>{
+    const b=e.target.closest("button");if(!b)return;
+    const inp=$("sections");let v=S.sections.trim();
+    if(b.dataset.add){v=v&&!/[+]$/.test(v)?v+"+"+b.dataset.add:v+b.dataset.add}
+    else if(b.dataset.k==="+"){
+      // insert at the cursor if the field is being typed in, otherwise at the end
+      if(document.activeElement===inp){const s=inp.selectionStart,en=inp.selectionEnd;v=inp.value.slice(0,s)+"+"+inp.value.slice(en);S.sections=v;inp.value=v;inp.setSelectionRange(s+1,s+1);upd();return}
+      v=v+"+";
+    }
+    else if(b.dataset.k==="back"){v=v.replace(/\+?[^+]*$/,"")}
+    else if(b.dataset.k==="clear"){v=""}
+    S.sections=v;inp.value=v;upd();
+  });
+  // keep focus (and the keyboard) in the field when tapping + while typing
+  $("chips").addEventListener("mousedown",e=>{if(document.activeElement===$("sections")&&e.target.closest('[data-k="+"]'))e.preventDefault()});
+
+  function sync(){fillChips();$("sections").value=S.sections;$("count").value=S.count;$("inset").value=S.inset;$("insetR").value=S.insetR;$("diffEnds").checked=!!S.diffEnds;$("spacing").value=S.spacing;$("unit").value=S.unit;$("joinWarn").value=S.joinWarn;fillRound()}
+  sync();
+
+  const upd=()=>{save();render()};
+  $("sections").addEventListener("input",e=>{S.sections=e.target.value;upd()});
+  $("count").addEventListener("input",e=>{const v=parseInt(e.target.value);if(v>0){S.count=Math.min(99,v);upd()}});
+  $("minus").onclick=()=>{S.count=Math.max(1,S.count-1);$("count").value=S.count;upd()};
+  $("plus").onclick=()=>{S.count=Math.min(99,S.count+1);$("count").value=S.count;upd()};
+  $("inset").addEventListener("input",e=>{S.inset=e.target.value;upd()});
+  $("insetR").addEventListener("input",e=>{S.insetR=e.target.value;upd()});
+  $("diffEnds").addEventListener("change",e=>{S.diffEnds=e.target.checked;if(S.diffEnds)S.insetR=S.inset,$("insetR").value=S.insetR;upd()});
+  $("spacing").addEventListener("input",e=>{S.spacing=e.target.value;upd()});
+  $("joinWarn").addEventListener("input",e=>{S.joinWarn=e.target.value;upd()});
+  $("showSec").checked=false;
+  $("showSec").addEventListener("change",e=>{showSec=e.target.checked;render()});
+  $("round").addEventListener("change",e=>{S.round=+e.target.value;upd()});
+  $("unit").addEventListener("change",e=>{
+    const f=UF[S.unit]/UF[e.target.value], conv=v=>+(v*f).toFixed(e.target.value==="mm"?0:3);
+    const secs=parseSections(S.sections);
+    if(secs) S.sections=secs.map(s=>+(s/UF[e.target.value]).toFixed(e.target.value==="mm"?0:3)).join("+");
+    S.inset=conv(+S.inset||0);S.insetR=conv(+S.insetR||0);S.spacing=conv(+S.spacing||0);S.unit=e.target.value;S.round=-1;sync();upd()});
+  document.querySelectorAll("#mode button").forEach(b=>b.onclick=()=>{S.mode=b.dataset.v;upd()});
+  document.querySelectorAll("#ref button").forEach(b=>b.onclick=()=>{S.ref=b.dataset.v;upd()});
+
+  function toggleRow(i){if(done.has(i)){done.delete(i);sel=i}else if(sel===i){done.add(i)}else{sel=i}render()}
+  $("rows").addEventListener("click",e=>{const tr=e.target.closest("tr.row");if(tr)toggleRow(+tr.dataset.i)});
+  $("svg").addEventListener("click",e=>{const g=e.target.closest("g[data-i]");if(g){sel=+g.dataset.i;render()}});
+
+  $("copy").onclick=async()=>{
+    const r=window._r;if(!r||r.err)return;
+    const head=`Truss ${S.sections.replace(/\s/g,"")} = ${fmt(r.L)}, ${r.n} fixtures, gap ${r.n>1?fmt(r.pos[1]-r.pos[0]):"—"}\nMarks from ${({left:"left end",right:"right end",centre:"centre"})[S.ref]}:`;
+    const body=r.rows.map((row,k)=>`${k+1}. ${S.ref==="centre"&&row.mark>0?"+":""}${fmt(row.mark,true)}${showSec?`  (sec ${row.sec} +${fmt(row.off)})`:""}${row.near?" NEAR JOIN":""}`).join("\n");
+    const txt=head+"\n"+body, btn=$("copy");
+    try{await navigator.clipboard.writeText(txt);btn.textContent="Copied"}catch(err){btn.textContent="Copy failed"}
+    setTimeout(()=>btn.textContent="Copy list",1600);
+  };
+
+  /* ---------- Export image ---------- */
+  const markTxt=row=>(S.ref==="centre"&&row.mark>0?"+":"")+fmt(row.mark,true);
+  const MODE_NAME={edge:"Set end gaps",equal:"Equal gaps",cells:"Centred",fixed:"Fixed gap"};
+  const REF_NAME={left:"left end",right:"right end",centre:"centre"};
+
+  async function buildPng(){
+    const r=window._r; if(!r||r.err) return null;
+    try{await document.fonts.ready}catch(e){}
+    const C={bg:"#ffffff",ink:"#16181c",muted:"#666d78",line:"#d8d6cf",band:"#f4f3ef",accent:"#c97f00",warn:"#d13b1c",truss:"#3a3f48"};
+    const FD="'Barlow Condensed','Arial Narrow',sans-serif", FB="Barlow,Arial,sans-serif", FM="'JetBrains Mono',monospace";
+    const W=2400,P=150,n=r.n,rowH=58,tableTop=960,H=tableTop+70+n*rowH+110;
+    const cv=document.createElement("canvas");cv.width=W;cv.height=H;
+    const c=cv.getContext("2d");
+    const X=p=>P+p*(W-2*P)/r.L;
+    const T=(s,x,y,font,col,align="left",base="alphabetic")=>{c.font=font;c.fillStyle=col;c.textAlign=align;c.textBaseline=base;c.fillText(s,x,y)};
+    const L=(x1,y1,x2,y2,col,w=2,dash)=>{c.beginPath();c.setLineDash(dash||[]);c.strokeStyle=col;c.lineWidth=w;c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();c.setLineDash([])};
+    c.fillStyle=C.bg;c.fillRect(0,0,W,H);
+
+    // Header
+    T("TRUSS PLOT",P,110,`700 76px ${FD}`,C.ink);
+    T(new Date().toLocaleDateString("en-AU",{day:"numeric",month:"short",year:"numeric"}),W-P,110,`500 32px ${FB}`,C.muted,"right");
+    const gap=n>1?fmt(r.pos[1]-r.pos[0]):"—";
+    T(`Truss ${S.sections.replace(/\s/g,"")} = ${fmt(r.L)}   ·   ${n} fixture${n>1?"s":""}   ·   ${MODE_NAME[S.mode]}   ·   Gap ${gap}`,P,165,`500 34px ${FB}`,C.ink);
+    T(`Marks measured from the ${REF_NAME[S.ref]}${S.ref==="centre"?" (− left, + right)":""}${S.mode==="edge"?(S.diffEnds?`   ·   End gaps: left ${fmt((+S.inset||0)*UF[S.unit])}, right ${fmt((+S.insetR||0)*UF[S.unit])}`:`   ·   End gap ${fmt((+S.inset||0)*UF[S.unit])}`):""}`,P,212,`400 30px ${FB}`,C.muted);
+
+    // Truss
+    const y1=300,y2=360;
+    let acc=0;
+    r.secs.forEach((s,k)=>{
+      const x0=X(acc),x1=X(acc+s),cnt=Math.max(1,Math.round((x1-x0)/40)),w=(x1-x0)/cnt;
+      for(let i=0;i<cnt;i++)L(x0+i*w,i%2?y1:y2,x0+(i+1)*w,i%2?y2:y1,C.truss,2.5);
+      const lab=`S${S.ref==="right"?r.secs.length-k:k+1}  ${fmt(s)}`;c.font=`500 26px ${FM}`;
+      T(c.measureText(lab).width<x1-x0-20?lab:fmt(s),(x0+x1)/2,y1-22,`500 26px ${FM}`,C.muted,"center");
+      acc+=s;
+    });
+    L(X(0),y1,X(r.L),y1,C.truss,7);L(X(0),y2,X(r.L),y2,C.truss,7);
+    c.fillStyle=C.truss;[0,...r.joins,r.L].forEach(j=>c.fillRect(X(j)-6,y1-10,12,y2-y1+20));
+
+    // Fixtures
+    const sorted=r.rows.slice().sort((a,b)=>a.p-b.p), small=n>30;
+    sorted.forEach(row=>{
+      const x=X(row.p),col=row.near?C.warn:C.ink;
+      L(x,y2,x,y2+20,col,4);
+      c.beginPath();c.moveTo(x-14,y2+20);c.lineTo(x+14,y2+20);c.lineTo(x+8,y2+58);c.lineTo(x-8,y2+58);c.closePath();c.fillStyle=col;c.fill();
+      const rad=small?15:22;
+      c.beginPath();c.arc(x,y2+95,rad,0,Math.PI*2);c.lineWidth=3;c.strokeStyle=col;c.stroke();
+      T(String(numMap.get(row.i)),x,y2+96,`600 ${small?18:24}px ${FM}`,col,"center","middle");
+    });
+
+    // Chain dimensions (gaps)
+    const yc=550, pts=[0,...sorted.map(r=>r.p),r.L];
+    L(X(0),yc,X(r.L),yc,C.ink,2);
+    pts.forEach(p=>{const x=X(p);L(x,yc-14,x,yc+14,C.ink,2);L(x-9,yc+9,x+9,yc-9,C.ink,3)});
+    c.font=`500 26px ${FM}`;
+    for(let i=0;i<pts.length-1;i++){
+      const a=X(pts[i]),b=X(pts[i+1]),seg=pts[i+1]-pts[i];if(seg<0.5)continue;
+      const s=fmt(rnd(seg));if(c.measureText(s).width+14<b-a)T(s,(a+b)/2,yc-16,`500 26px ${FM}`,C.ink,"center");
+    }
+    T("GAPS",P-20,yc,`600 22px ${FB}`,C.muted,"right","middle");
+
+    // Running marks from reference
+    const yr=620, rx=S.ref==="right"?X(r.L):S.ref==="centre"?X(r.L/2):X(0);
+    c.beginPath();c.moveTo(rx,yr-30);c.lineTo(rx-14,yr-4);c.lineTo(rx+14,yr-4);c.closePath();c.fillStyle=C.accent;c.fill();
+    T("0",S.ref==="right"?rx-22:rx+22,yr-14,`700 30px ${FM}`,C.accent,S.ref==="right"?"right":"left","middle");
+    L(rx,y2+4,rx,yr-34,C.accent,2,[8,8]);
+    // Mark labels: horizontal when they fit, otherwise slanted just enough that neighbours clear each other
+    const fs=small?24:30, mf=`600 ${fs}px ${FM}`, fs2=Math.round(fs*0.78), sf=`500 ${fs2}px ${FM}`;
+    const secTxt=row=>`S${row.sec} +${fmt(row.off)}`;
+    c.font=mf; let labW=Math.max(...sorted.map(row=>c.measureText(markTxt(row)).width));
+    if(showSec){c.font=sf;labW=Math.max(labW,...sorted.map(row=>c.measureText(secTxt(row)).width))}
+    const pad=34, blockH=showSec?fs+fs2+8:fs;
+    let minSp=Infinity; for(let i=1;i<sorted.length;i++) minSp=Math.min(minSp,X(sorted[i].p)-X(sorted[i-1].p));
+    let ang=0;
+    if(labW+pad>minSp){
+      const need=(blockH+pad*0.6)/minSp;                   // spacing·sin(θ) must clear the label block height
+      ang=need>=1?Math.PI/2:Math.max(Math.asin(need),Math.PI/6);
+    }
+    const ext=labW*Math.cos(ang)/2, vh=(labW*Math.sin(ang)+blockH*Math.cos(ang))/2, cyM=yr+18+vh;
+    if(X(sorted[0].p)-ext>P-10) T("MARKS",P-20,yr+40,`600 22px ${FB}`,C.muted,"right","middle");
+    sorted.forEach(row=>{
+      const x=X(row.p);L(x,yc+16,x,yr+4,C.line,2,[6,6]);
+      c.save();c.translate(x,cyM);c.rotate(-ang);
+      const off=showSec?-(blockH-fs)/2:0;
+      T(markTxt(row),0,off,mf,row.near?C.warn:C.ink,"center","middle");
+      if(showSec)T(secTxt(row),0,off+fs/2+8+fs2/2,sf,C.muted,"center","middle");
+      c.restore();
+    });
+
+    // Overall
+    const yo=880;
+    L(X(0),yo,X(r.L),yo,C.ink,2);
+    [[X(0),1],[X(r.L),-1]].forEach(([x,d])=>{c.beginPath();c.moveTo(x,yo);c.lineTo(x+d*24,yo-10);c.lineTo(x+d*24,yo+10);c.closePath();c.fillStyle=C.ink;c.fill();L(x,yo-24,x,yo+24,C.ink,2)});
+    const ov=`${fmt(r.L)} overall`;c.font=`600 30px ${FM}`;const ow=c.measureText(ov).width+30;
+    c.fillStyle=C.bg;c.fillRect(W/2-ow/2,yo-22,ow,44);T(ov,W/2,yo,`600 30px ${FM}`,C.ink,"center","middle");
+
+    // Table
+    const cols=showSec
+      ?[[P,"#","left"],[P+330,`FROM ${REF_NAME[S.ref].toUpperCase()}`,"right"],[P+560,"SECTION","right"],[P+900,"IN SECTION","right"],[P+1240,"GAP","right"],[P+1300,"","left"]]
+      :[[P,"#","left"],[P+330,`FROM ${REF_NAME[S.ref].toUpperCase()}`,"right"],null,null,[P+640,"GAP","right"],[P+700,"","left"]];
+    const th=tableTop+30;
+    cols.forEach(col=>col&&T(col[1],col[0],th,`600 24px ${FB}`,C.muted,col[2]));
+    L(P,th+18,W-P,th+18,C.line,2);
+    r.rows.forEach((row,k)=>{
+      const y=th+18+k*rowH;
+      if(k%2){c.fillStyle=C.band;c.fillRect(P,y,W-2*P,rowH)}
+      const cy=y+rowH/2+2,f=`500 30px ${FM}`;
+      T(String(k+1),cols[0][0]+8,cy,`600 30px ${FM}`,C.ink,"left","middle");
+      T(markTxt(row),cols[1][0],cy,`700 32px ${FM}`,row.near?C.warn:C.ink,"right","middle");
+      if(showSec){T(String(row.sec),cols[2][0],cy,f,C.ink,"right","middle");T(fmt(row.off),cols[3][0],cy,f,C.ink,"right","middle")}
+      T(row.gap!=null?fmt(rnd(row.gap)):"—",cols[4][0],cy,f,C.ink,"right","middle");
+      if(row.near)T("NEAR SECTION JOIN",cols[5][0],cy,`600 24px ${FB}`,C.warn,"left","middle");
+    });
+    const fy=th+18+n*rowH+60;
+    T(`Rounded to ${S.round?$("round").selectedOptions[0].textContent:"exact values"}.${showSec?`  "In section" is measured from the ${S.ref==="right"?"right":"left"} end of each section; sections numbered from the ${S.ref==="right"?"right":"left"}.`:""}`,P,fy,`400 26px ${FB}`,C.muted);
+    return await new Promise(res=>cv.toBlob(res,"image/png"));
+  }
+
+  let pngBlob=null, pngUrl=null, dl=null, dlTried=false;
+  async function getDownloads(){if(!dlTried){dlTried=true;try{dl=await window.claude?.use?.("downloads")}catch(e){dl=null}}return dl}
+  getDownloads();
+
+  $("exportBtn").onclick=async()=>{
+    const btn=$("exportBtn");btn.textContent="Drawing…";
+    pngBlob=await buildPng();btn.textContent="Export image";
+    if(!pngBlob)return;
+    if(pngUrl)URL.revokeObjectURL(pngUrl);pngUrl=URL.createObjectURL(pngBlob);
+    $("sheetImg").src=pngUrl;
+    const d=await getDownloads();
+    $("saveBtn").hidden=!d;
+    $("sheetHint").textContent=d?"Saves a PNG you can share to the crew or print.":"Press and hold the image to save or share it.";
+    $("sheet").hidden=false;$("sheetClose").focus();
+  };
+  $("sheetClose").onclick=()=>{$("sheet").hidden=true};
+  $("sheet").addEventListener("click",e=>{if(e.target.id==="sheet")$("sheet").hidden=true});
+  $("saveBtn").onclick=async()=>{
+    const d=await getDownloads();if(!d||!pngBlob)return;
+    const name=`truss-plot-${S.sections.replace(/[^\dx.]+/gi,"-").replace(/^-|-$/g,"")}-${window._r.n}fx.png`;
+    try{await d.save({filename:name,data:pngBlob});$("sheetHint").textContent="Saved."}
+    catch(e){
+      if(e&&e.code==="declined")$("sheetHint").textContent="Not saved. Tap Save PNG to try again.";
+      else if(e&&e.code==="rate_limited")$("sheetHint").textContent="A save prompt is already open. Finish that one first.";
+      else{$("saveBtn").hidden=true;$("sheetHint").textContent="Saving isn't available here. Press and hold the image to save it."}
+    }
+  };
+
+  let lock=null;
+  $("wake").onclick=async()=>{
+    const b=$("wake");
+    if(lock){try{await lock.release()}catch(e){}lock=null;b.setAttribute("aria-pressed","false");b.textContent="Keep screen on";return}
+    try{lock=await navigator.wakeLock.request("screen");b.setAttribute("aria-pressed","true");b.textContent="Screen stays on";
+      lock.addEventListener("release",()=>{lock=null;b.setAttribute("aria-pressed","false");b.textContent="Keep screen on"})}
+    catch(e){b.textContent="Not available here";setTimeout(()=>b.textContent="Keep screen on",1800)}
+  };
+
+  render();
+})();
+</script>
+
+</body>
+</html>
