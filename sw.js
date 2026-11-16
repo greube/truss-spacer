@@ -1,7 +1,12 @@
 /* Truss Spacer service worker: precaches the whole app so it runs with no signal.
    Serves from cache straight away and refreshes the cache in the background,
-   so a new version shows up on the next launch. Bump VERSION when the file list changes. */
-const VERSION = "ts-v1";
+   so a new version shows up on the next launch.
+   Each copy of the app (the live one, and the v2 preview in /v2/) only touches its own
+   files and caches, because they share one origin. The deploy stamps BUILD with the commit. */
+const BUILD = "dev";
+const SCOPE = new URL(self.registration.scope).pathname;   // e.g. /truss-spacer/
+const PREFIX = "ts:" + SCOPE + ":";
+const VERSION = PREFIX + BUILD;
 const ASSETS = [
   "./",
   "index.html",
@@ -30,18 +35,23 @@ self.addEventListener("install", e => {
 self.addEventListener("activate", e => {
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k !== VERSION && (k.startsWith(PREFIX) || k.startsWith("ts-"))).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
 
+// Only this app's own files: anything else (like the /v2/ preview inside this scope) goes straight to the network
+const OWN = new Set(ASSETS.map(a => new URL(a, self.registration.scope).pathname));
+
 self.addEventListener("fetch", e => {
-  const req = e.request;
-  if (req.method !== "GET" || new URL(req.url).origin !== self.location.origin) return;
-  // Any page load inside the app gets the app shell, even with a query string
-  const key = req.mode === "navigate" ? "index.html" : req;
+  const req = e.request, url = new URL(req.url);
+  if (req.method !== "GET" || url.origin !== self.location.origin) return;
+  const shell = req.mode === "navigate" && (url.pathname === SCOPE || url.pathname === SCOPE + "index.html");
+  if (!shell && !OWN.has(url.pathname)) return;
+  // A page load of the app gets the app shell, even with a query string
+  const key = shell ? "index.html" : url.pathname;
   e.respondWith(caches.open(VERSION).then(async cache => {
-    const hit = await cache.match(key, { ignoreSearch: req.mode === "navigate" });
+    const hit = await cache.match(key, { ignoreSearch: shell });
     const net = fetch(req).then(res => {
       if (res && res.ok && res.type === "basic") cache.put(key, res.clone());
       return res;

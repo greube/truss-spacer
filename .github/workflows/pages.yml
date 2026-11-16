@@ -1,9 +1,18 @@
 name: Deploy to GitHub Pages
 
+# Publishes the live app from main at /truss-spacer/ and, if the v2 branch exists,
+# a preview of it at /truss-spacer/v2/.
+# A push to v2 runs the small "Preview v2" workflow on that branch, which triggers this one
+# here on main (workflow_run), so the deploy always runs from main and passes the Pages
+# environment's branch rule.
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Preview v2"]
+    types: [completed]
 
 permissions:
   contents: read
@@ -12,25 +21,55 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: live
 
-      # Publish only the app itself (not CLAUDE.md, README etc.).
-      # Stamp the service worker cache name with the commit so phones pick up each deploy cleanly.
+      - name: Check for a v2 branch
+        id: v2
+        run: |
+          if git -C live ls-remote --exit-code --heads origin v2 >/dev/null; then echo "exists=true" >> "$GITHUB_OUTPUT"; fi
+
+      - uses: actions/checkout@v4
+        if: steps.v2.outputs.exists == 'true'
+        with:
+          ref: v2
+          path: preview
+
+      # Publish only the app itself (not CLAUDE.md, README, tests etc.).
+      # Stamp each service worker with its commit so phones pick up each deploy cleanly.
       - name: Assemble site
         run: |
-          mkdir _site
-          cp -r index.html manifest.webmanifest sw.js js icons fonts _site/
-          sed -i "s/const VERSION = \"ts-v1\";/const VERSION = \"ts-${GITHUB_SHA::7}\";/" _site/sw.js
-          grep -q "ts-${GITHUB_SHA::7}" _site/sw.js
+          assemble() {
+            src=$1; out=$2
+            mkdir -p "$out"
+            cp -r "$src/index.html" "$src/manifest.webmanifest" "$src/sw.js" "$src/icons" "$src/fonts" "$out/"
+            if [ -d "$src/js" ]; then cp -r "$src/js" "$out/"; fi
+            sha=$(git -C "$src" rev-parse --short HEAD)
+            sed -i "s/const BUILD = \"dev\";/const BUILD = \"$sha\";/" "$out/sw.js"
+            grep -q "const BUILD = \"$sha\";" "$out/sw.js"
+          }
+          assemble live _site
+          if [ -d preview ]; then
+            assemble preview _site/v2
+            # Label the preview so it installs as a separate app next to the live one
+            sed -i 's/"name": "Truss Spacer"/"name": "Truss Spacer v2 preview"/; s/"short_name": "Truss Spacer"/"short_name": "TS v2"/' _site/v2/manifest.webmanifest
+            sed -i 's#<title>Truss Spacer</title>#<title>Truss Spacer v2 preview</title>#; s#<h1>Truss <span>Spacer</span></h1>#<h1>Truss <span>Spacer v2</span></h1>#' _site/v2/index.html
+            grep -q "v2 preview" _site/v2/manifest.webmanifest
+            grep -q "Spacer v2</span>" _site/v2/index.html
+          fi
+          find _site -maxdepth 2 | sort
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

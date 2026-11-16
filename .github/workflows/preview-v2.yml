@@ -1,0 +1,16 @@
+name: Preview v2
+
+# Runs on every push to v2. When it finishes, the "Deploy to GitHub Pages" workflow on main
+# rebuilds the site with this branch at /truss-spacer/v2/. Kept on v2 only.
+
+on:
+  push:
+    branches: [v2]
+
+permissions: {}
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "v2 updated at ${GITHUB_SHA::7}; the Pages workflow on main will rebuild the /v2/ preview."
