@@ -650,6 +650,94 @@
    "quote": "AC 100-240V - 50/60Hz 480W Max Power Consumption"
   },
   {
+   "m": "ETC",
+   "n": "ColorSource PAR",
+   "w": 89,
+   "url": "https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737484145",
+   "quote": "Wattage typical 90 W at 120 V / 89 W at 240 V",
+   "note": "typical; standard and Deep Blue. PAR Pearl is 112 W at 230 V"
+  },
+  {
+   "m": "ETC",
+   "n": "ColorSource Spot V",
+   "w": 199,
+   "url": "https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737520355",
+   "quote": "Wattage: Typical: 199. Standby: 2 at 100 V. ... Typical: 194. Standby: 2 at 240 V.",
+   "note": "typical; highest figure (100 V) used, 194 W at 240 V. This is the current Spot V, not the original discontinued ColorSource Spot"
+  },
+  {
+   "m": "ETC",
+   "n": "Desire D40",
+   "w": 103,
+   "url": "https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737520355",
+   "quote": "Wattage: 103",
+   "note": "From ETC '26 55 61' specification, Desire D40 section; current 0.40 A at 240 V. D40XT/D40XTI: 110 W"
+  },
+  {
+   "m": "ETC",
+   "n": "Desire D60",
+   "w": 161,
+   "url": "https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737520355",
+   "quote": "Wattage: 161.",
+   "note": "From ETC '26 55 61' specification, Desire D60 section; current 0.57 A at 240 V"
+  },
+  {
+   "m": "ETC",
+   "n": "fos/4 Panel Large",
+   "w": 1430,
+   "url": "https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737501408",
+   "quote": "Wattage (Typical) (Small/Medium/Large) 120 V: 475/955/1,475 W 230 V: 465/935/1,430 W",
+   "note": "typical; 1,475 W at 120 V"
+  },
+  {
+   "m": "ETC",
+   "n": "fos/4 Panel Medium",
+   "w": 935,
+   "url": "https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737501408",
+   "quote": "Wattage (Typical) (Small/Medium/Large) 120 V: 475/955/1,475 W 230 V: 465/935/1,430 W",
+   "note": "typical; 955 W at 120 V"
+  },
+  {
+   "m": "ETC",
+   "n": "fos/4 Panel Small",
+   "w": 465,
+   "url": "https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737501408",
+   "quote": "Wattage (Typical) (Small/Medium/Large) 120 V: 475/955/1,475 W 230 V: 465/935/1,430 W",
+   "note": "typical; 475 W at 120 V"
+  },
+  {
+   "m": "ETC",
+   "n": "Source Four (HPL 575 W)",
+   "w": 575,
+   "url": "https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737460435",
+   "quote": "HPL 575/115 ... 575 (Watts)",
+   "note": "Tungsten: lamp wattage. Datasheet: '750W maximum' lamp for the fixture"
+  },
+  {
+   "m": "ETC",
+   "n": "Source Four (HPL 750 W)",
+   "w": 750,
+   "url": "https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737460435",
+   "quote": "750W maximum; HPL 750/230 ... 750 (Watts)",
+   "note": "Tungsten: lamp wattage"
+  },
+  {
+   "m": "ETC",
+   "n": "Source Four LED Series 2 Lustr",
+   "w": 167,
+   "url": "https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737483869",
+   "quote": "Wattage typical Series 2 Lustr: 167",
+   "note": "typical, measured at 120 V; datasheet gives current draw 0.78 A at 240 V (about 187 VA), so allow headroom"
+  },
+  {
+   "m": "ETC",
+   "n": "Source Four LED Series 3 Lustr X8",
+   "w": 305,
+   "url": "https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737520355",
+   "quote": "Wattage: Lustr X8: 307 at 120 V. 305 at 230 V.",
+   "note": "From ETC '26 55 61 Entertainment LED Luminaires' specification (Word doc); 307 W at 120 V"
+  },
+  {
    "m": "Generic",
    "n": "1 kW cyc flood",
    "w": 1000,
@@ -859,6 +947,91 @@
    "note": "Search snippet."
   },
   {
+   "m": "High End Systems",
+   "n": "Halcyon Gold",
+   "w": 684,
+   "url": "https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737512924",
+   "quote": "Wattage (Standard/Max/Standby) 668 W / 684 W / 26 W"
+  },
+  {
+   "m": "High End Systems",
+   "n": "Halcyon Platinum",
+   "w": 1820,
+   "url": "https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737512923",
+   "quote": "Wattage (Standard/Boost/Max/Standby) 1332 W / 1707 W / 1820 W / 39 W",
+   "note": "max (boost); 1332 W standard"
+  },
+  {
+   "m": "High End Systems",
+   "n": "Halcyon Silent",
+   "w": 931,
+   "url": "https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737517391",
+   "quote": "Wattage 931 W"
+  },
+  {
+   "m": "High End Systems",
+   "n": "Halcyon Titanium",
+   "w": 1200,
+   "url": "https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737512922",
+   "quote": "Wattage 1200 W",
+   "note": "current max 5 A at 240 V"
+  },
+  {
+   "m": "High End Systems",
+   "n": "Lonestar",
+   "w": 615,
+   "url": "https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737513380",
+   "quote": "Wattage (Max) 615 W"
+  },
+  {
+   "m": "High End Systems",
+   "n": "SolaFrame 1000",
+   "w": 958,
+   "url": "https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737503529",
+   "quote": "Wattage (Standard/+Defogger) 917 W / 958 W",
+   "note": "with defogger; 917 W standard"
+  },
+  {
+   "m": "High End Systems",
+   "n": "SolaFrame 2000",
+   "w": 890,
+   "url": "https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737503533",
+   "quote": "Wattage (Standard/+Defogger) 855 W / 890 W",
+   "note": "with defogger; 855 W standard"
+  },
+  {
+   "m": "High End Systems",
+   "n": "SolaFrame 3000",
+   "w": 1531,
+   "url": "https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737503549",
+   "quote": "Wattage (Standard/+Defogger) 1,487 W / 1,531 W",
+   "note": "with defogger; 1,487 W standard"
+  },
+  {
+   "m": "High End Systems",
+   "n": "SolaFrame 750",
+   "w": 562,
+   "url": "https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737512830",
+   "quote": "Wattage (Standard/+Defogger) 515 W / 562 W",
+   "note": "with lens defogger on; 515 W standard. Also at highend.com/documentation/SolaFrame750/SolaFrame750-datasheet.pdf"
+  },
+  {
+   "m": "High End Systems",
+   "n": "SolaFrame Theatre",
+   "w": 738,
+   "url": "https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737518473",
+   "quote": "Wattage (Standard/+Defogger) 703 W / 738 W",
+   "note": "with defogger; 703 W standard"
+  },
+  {
+   "m": "High End Systems",
+   "n": "SolaWash 2000",
+   "w": 950,
+   "url": "https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737503732",
+   "quote": "Wattage (Standard/+Defogger) 900 / 950 W",
+   "note": "with defogger; 900 W standard"
+  },
+  {
    "m": "Look Solutions",
    "n": "Unique 2.1",
    "w": 1500,
@@ -868,11 +1041,178 @@
   },
   {
    "m": "Martin",
+   "n": "Atomic 3000 LED",
+   "w": 740,
+   "url": "https://www.martin.com/en/products/atomic-3000-led",
+   "quote": "Power Consumption Maximum: 740 W",
+   "note": "Typical 663 W"
+  },
+  {
+   "m": "Martin",
+   "n": "ERA 300 Profile",
+   "w": 374,
+   "url": "https://www.martin.com/en/products/era-300-profile",
+   "quote": "Power Consumption Typical: 374 W",
+   "note": "typical figure only; Martin publishes no maximum and says allow +/-10% deviation"
+  },
+  {
+   "m": "Martin",
+   "n": "ERA 400 Performance",
+   "w": 455,
+   "url": "https://www.martin.com/en-US/products/era-400-performance-cld",
+   "quote": "Power Consumption Typical: 455 W",
+   "note": "typical figure only; Martin publishes no maximum and says allow +/-10% deviation; CLD version (WRM discontinued)"
+  },
+  {
+   "m": "Martin",
+   "n": "ERA 600 Performance",
+   "w": 856,
+   "url": "https://www.martin.com/en/products/era-600-performance",
+   "quote": "Power Consumption Maximum: 856 W",
+   "note": "Typical 778 W"
+  },
+  {
+   "m": "Martin",
+   "n": "ERA 800 Performance",
+   "w": 1397,
+   "url": "https://www.martin.com/en/products/era-800-performance",
+   "quote": "Power Consumption Maximum: 1397 W",
+   "note": "Typical 1270 W"
+  },
+  {
+   "m": "Martin",
    "n": "JEM ZR45",
    "w": 2100,
    "url": "https://martin.com/en-US/site_elements/jem-zr45-spec-sheet-english",
    "quote": "Typical power and current: 2100 W, 9.2 A",
    "note": "EU 230 V model. Martin calls this 'typical'; main fuse 12.5 AT. Only one per 2400 W circuit."
+  },
+  {
+   "m": "Martin",
+   "n": "MAC Allure Profile",
+   "w": 480,
+   "url": "https://www.martin.com/en/products/mac-allure-profile",
+   "quote": "Typical power data, extended color mode, all LEDs at 100% intensity: ... 230 V, 50 Hz: 2.1 A, 480 W",
+   "note": "typical figure only (extended colour mode, all LEDs 100%); no maximum published"
+  },
+  {
+   "m": "Martin",
+   "n": "MAC Aura",
+   "w": 260,
+   "url": "https://www.martin.com/en/products/mac-aura",
+   "quote": "Maximum total power consumption: 260 W",
+   "note": "Typical 228 W at 230 V"
+  },
+  {
+   "m": "Martin",
+   "n": "MAC Aura PXL",
+   "w": 560,
+   "url": "https://www.martin.com/en/products/mac-aura-pxl",
+   "quote": "Power Consumption Maximum: 560 W",
+   "note": "Typical 500 W"
+  },
+  {
+   "m": "Martin",
+   "n": "MAC Aura XB",
+   "w": 400,
+   "url": "https://www.martin.com/en/products/mac-aura-xb",
+   "quote": "Power Consumption Maximum: 400 W",
+   "note": "Typical 359 W"
+  },
+  {
+   "m": "Martin",
+   "n": "MAC Axiom Hybrid",
+   "w": 600,
+   "url": "https://www.martin.com/en/products/mac-axiom-hybrid",
+   "quote": "Typical power consumption: 600 W",
+   "note": "typical figure only; product page also says '600 W total power consumption'"
+  },
+  {
+   "m": "Martin",
+   "n": "MAC Encore Performance",
+   "w": 596,
+   "url": "https://www.martin.com/en-US/products/mac-encore-performance-cld",
+   "quote": "Power Consumption Typical: 596 W",
+   "note": "typical figure only; Martin publishes no maximum and says allow +/-10% deviation; CLD and WRM versions list the same figure"
+  },
+  {
+   "m": "Martin",
+   "n": "MAC Encore Wash",
+   "w": 596,
+   "url": "https://www.martin.com/en-US/products/mac-encore-wash-cld",
+   "quote": "Power Consumption Typical: 596 W",
+   "note": "typical figure only; Martin publishes no maximum and says allow +/-10% deviation; CLD and WRM versions list the same figure"
+  },
+  {
+   "m": "Martin",
+   "n": "MAC Quantum Profile",
+   "w": 750,
+   "url": "https://www.martin.com/en/products/mac-quantum-profile",
+   "quote": "Power Consumption Maximum: 750 W",
+   "note": "Typical 576 W"
+  },
+  {
+   "m": "Martin",
+   "n": "MAC Quantum Wash",
+   "w": 1020,
+   "url": "https://www.martin.com/en/products/mac-quantum-wash",
+   "quote": "Maximum total power consumption: 1020 W",
+   "note": "Typical 856 W at 230 V"
+  },
+  {
+   "m": "Martin",
+   "n": "MAC Ultra Performance",
+   "w": 1450,
+   "url": "https://www.martin.com/en/products/mac-ultra-performance",
+   "quote": "Power Consumption Maximum: 1450 W",
+   "note": "Typical 1380 W"
+  },
+  {
+   "m": "Martin",
+   "n": "MAC Ultra Wash",
+   "w": 1450,
+   "url": "https://www.martin.com/en/products/mac-ultra-wash",
+   "quote": "Power Consumption Maximum: 1450 W",
+   "note": "Typical 1360 W"
+  },
+  {
+   "m": "Martin",
+   "n": "MAC Viper Performance",
+   "w": 1225,
+   "url": "https://www.martin.com/en/products/mac-viper-performance",
+   "quote": "Power Consumption Typical: 1225 W",
+   "note": "typical figure only; Martin publishes no maximum and says allow +/-10% deviation"
+  },
+  {
+   "m": "Martin",
+   "n": "MAC Viper Profile",
+   "w": 1225,
+   "url": "https://www.martin.com/en/products/mac-viper-profile",
+   "quote": "Power Consumption Typical: 1225 W",
+   "note": "typical figure only; Martin publishes no maximum and says allow +/-10% deviation"
+  },
+  {
+   "m": "Martin",
+   "n": "MAC Viper Wash",
+   "w": 1225,
+   "url": "https://www.martin.com/en/products/mac-viper-wash",
+   "quote": "Power Consumption Typical: 1225 W",
+   "note": "typical figure only; Martin publishes no maximum and says allow +/-10% deviation"
+  },
+  {
+   "m": "Martin",
+   "n": "RUSH Batten 1 Hex",
+   "w": 148,
+   "url": "https://www.martin.com/en/products/rush-batten-1-hex",
+   "quote": "Maximum total power consumption: 148 W"
+  },
+  {
+   "m": "Martin",
+   "n": "RUSH MH 6 Wash",
+   "w": 150,
+   "url": "https://www.martin.com/en/products/rush-mh-6-wash",
+   "quote": "230 V, 50 Hz: 0.7 A, 150 W",
+   "note": "Martin: 'Power consumption figures are typical, not maximum. Allow for +/-10% variation.'"
   },
   {
    "m": "MDG",
@@ -884,10 +1224,182 @@
   },
   {
    "m": "Robe",
+   "n": "BMFL Blade",
+   "w": 2000,
+   "url": "https://www.robe.cz/bmfl-blade",
+   "quote": "Power consumption: 2000 W at 230 V / 50 Hz"
+  },
+  {
+   "m": "Robe",
+   "n": "BMFL Spot",
+   "w": 2000,
+   "url": "https://www.robe.cz/bmfl-spot",
+   "quote": "Power consumption: 2000 W at 230 V / 50 Hz"
+  },
+  {
+   "m": "Robe",
+   "n": "BMFL WashBeam",
+   "w": 2000,
+   "url": "https://www.robe.cz/bmfl-washbeam",
+   "quote": "Power consumption: 2000 W at 230 V / 50 Hz"
+  },
+  {
+   "m": "Robe",
+   "n": "Cyclone",
+   "w": 570,
+   "url": "https://www.robe.cz/cyclone",
+   "quote": "Max. power consumption: 570 W"
+  },
+  {
+   "m": "Robe",
+   "n": "ESPRITE",
+   "w": 950,
+   "url": "https://www.robe.cz/esprite",
+   "quote": "High-power mode max. 950 W at 230 V / 50 Hz",
+   "note": "Standard mode max. 870 W; used high-power mode"
+  },
+  {
+   "m": "Robe",
+   "n": "FORTE",
+   "w": 1250,
+   "url": "https://www.robe.cz/forte",
+   "quote": "Power consumption: max. 1250 W"
+  },
+  {
+   "m": "Robe",
+   "n": "iFORTE",
+   "w": 1250,
+   "url": "https://www.robe.cz/iforte",
+   "quote": "Power consumption: max. 1250 W"
+  },
+  {
+   "m": "Robe",
+   "n": "iPointe",
+   "w": 550,
+   "url": "https://www.robe.cz/ipointe55",
+   "quote": "Power consumption: max. 550 W",
+   "note": "IP65 version (iPointe65, robe.cz/ipointe65) also max. 550 W"
+  },
+  {
+   "m": "Robe",
+   "n": "iSpiider",
+   "w": 660,
+   "url": "https://www.robe.cz/ispiider",
+   "quote": "Power consumption: max. 660 W"
+  },
+  {
+   "m": "Robe",
+   "n": "LEDBeam 150",
+   "w": 220,
+   "url": "https://www.robe.cz/ledbeam-150",
+   "quote": "Power consumption: Max. 220 W"
+  },
+  {
+   "m": "Robe",
+   "n": "LEDBeam 350",
+   "w": 450,
+   "url": "https://www.robe.cz/ledbeam-350",
+   "quote": "Power consumption: Max. 450 W"
+  },
+  {
+   "m": "Robe",
+   "n": "LEDWash 600",
+   "w": 450,
+   "url": "https://www.robe.cz/ledwash-600",
+   "quote": "Power consumption: Max. 450 W at 230 V / 50 Hz",
+   "note": "Formerly Robin 600 LEDWash"
+  },
+  {
+   "m": "Robe",
+   "n": "LEDWash 600X",
+   "w": 430,
+   "url": "https://www.robe.cz/ledwash-600x",
+   "quote": "Power consumption: Max. 430 W"
+  },
+  {
+   "m": "Robe",
    "n": "MegaPointe",
    "w": 670,
    "url": "https://www.robe.cz/megapointe",
    "quote": "Power consumption: 670 W"
+  },
+  {
+   "m": "Robe",
+   "n": "PAINTE",
+   "w": 440,
+   "url": "https://www.robe.cz/painte",
+   "quote": "Power consumption: max. 440 W"
+  },
+  {
+   "m": "Robe",
+   "n": "ParFect 150 RGBW",
+   "w": 220,
+   "url": "https://www.robe.cz/parfect-150-rgbw",
+   "quote": "Power consumption: Max. 220 W",
+   "note": "ParFect 150 FW RGBW also Max. 220 W"
+  },
+  {
+   "m": "Robe",
+   "n": "ParFect S1",
+   "w": 150,
+   "url": "https://www.robe.cz/parfect-s1",
+   "quote": "Power Consumption: Max. 150 W"
+  },
+  {
+   "m": "Robe",
+   "n": "Pointe",
+   "w": 470,
+   "url": "https://www.robe.cz/pointe",
+   "quote": "Power consumption: 470 W at 230 V / 50 Hz"
+  },
+  {
+   "m": "Robe",
+   "n": "Spiider",
+   "w": 660,
+   "url": "https://www.robe.cz/spiider",
+   "quote": "Power consumption: max. 660 W"
+  },
+  {
+   "m": "Robe",
+   "n": "Spikie",
+   "w": 100,
+   "url": "https://www.robe.cz/spikie",
+   "quote": "Power consumption: Max. 100 W at 230 V / 50 Hz"
+  },
+  {
+   "m": "Robe",
+   "n": "SuperSpikie",
+   "w": 330,
+   "url": "https://www.robe.cz/superspikie",
+   "quote": "Power consumption: Max. 330 W at 230 V / 50 Hz"
+  },
+  {
+   "m": "Robe",
+   "n": "T1 Profile",
+   "w": 750,
+   "url": "https://www.robe.cz/t1-profile",
+   "quote": "Power consumption: maximum 750 W at 230 V / 50 Hz (all LEDs On)"
+  },
+  {
+   "m": "Robe",
+   "n": "T2 Profile",
+   "w": 1150,
+   "url": "https://www.robe.cz/t2-profile",
+   "quote": "Power consumption: max. 1150 W"
+  },
+  {
+   "m": "Robe",
+   "n": "Tarrantula",
+   "w": 1000,
+   "url": "https://www.robe.cz/tarrantula",
+   "quote": "Power consumption: 1000 W"
+  },
+  {
+   "m": "Robe",
+   "n": "Tetra2",
+   "w": 600,
+   "url": "https://www.robe.cz/tetra2",
+   "quote": "Power consumption: 600 W at 230 V / 50 Hz"
   },
   {
    "m": "Selecon",
