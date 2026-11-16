@@ -6,7 +6,14 @@ It was built in a claude.ai chat as a single-page web app published as a Claude 
 
 ## Current state
 
-- **The app is in `index.html`**: HTML, CSS and JS in one file. There's no build step and no framework. Alongside it, only what the PWA needs:
+- **v2 is in progress on the `v2` branch.** The plan, decisions and build order are in `docs/v2-plan.md`. Stage 1 (jobs with multiple trusses) is done.
+- **Files, with no build step and no framework.** Plain `<script>` tags, not ES modules, so `index.html` still opens straight from `file://`.
+  - `index.html`: markup and CSS
+  - `js/spacing.js`: pure spacing maths, unchanged from v1
+  - `js/store.js`: jobs, migration, job files
+  - `js/app.js`: UI
+
+  Alongside those, only what the PWA needs:
   - `manifest.webmanifest`
   - `sw.js`
   - `icons/` (generated from `icon.svg` and `maskable.svg`)
@@ -16,7 +23,9 @@ It was built in a claude.ai chat as a single-page web app published as a Claude 
 - **PWA**: `sw.js` precaches every file in its `ASSETS` list and serves stale-while-revalidate. **Add any new file to `ASSETS`.** The SW only registers over http(s).
 - **Deploy**: `.github/workflows/pages.yml` publishes only the app files to GitHub Pages on every push to `main`. It stamps `VERSION` in `sw.js` with the commit SHA so each deploy gets a fresh cache. URL: https://greube.github.io/truss-spacer/
 - The original artifact host injected the `<!doctype>`/`<head>` skeleton and a small CSS reset. Both have been inlined at the top of `index.html`, so the file now runs standalone. Open it in a browser or serve the folder.
-- There are no tests yet.
+- **Tests**: `node --test tests/*.test.js`.
+  - `tests/spacing.test.js` checks `js/spacing.js` against 260 cases recorded from v1 in Chromium (`tests/v1-golden.json`). If it fails, the maths has changed.
+  - `tests/store.test.js` covers migration and job files.
 
 ## What the app does
 
@@ -47,20 +56,29 @@ It was built in a claude.ai chat as a single-page web app published as a Claude 
     Mark labels sit **horizontal when they fit** and tilt only as much as needed so neighbouring labels clear each other (`ang` computed from the minimum fixture spacing). Gap labels on the chain line are skipped when they don't fit.
 12. **Light and dark theme**: dark-first tokens on `:root`, with light overrides via `prefers-color-scheme` and `data-theme`.
 
-## Code map (inside the `<script>` IIFE)
+## Jobs and trusses (v2 stage 1)
+
+- **Job**: a named set of trusses, plus job-wide settings (`unit`, `round`, `joinWarn`). Changing units converts every truss in the job.
+- **Truss**: `{id, name, sections, count, mode, inset, insetR, diffEnds, spacing, ref}`. Lengths are kept in the job's unit, as typed.
+- **Tabs**: **Rig** (an overview card per truss, plus "Copy rig"), then one tab per truss, then "+ Truss". Each truss tab is the v1 screen, with a name field and Move, Duplicate and Delete buttons.
+- **Jobs ▾ sheet**: rename, new, duplicate and delete jobs, and switch between them.
+  - Save file downloads `name.truss.json`.
+  - Share sends the job through the share sheet. Android won't share `.json`, so it falls back to `.truss.txt`.
+  - Open file imports a job with fresh ids.
+- **Saving**: `localStorage["trussSpacerJobs"]`. On first run, v1's `localStorage["trussSpacer"]` becomes the job "My rig". The v1 key is never deleted, because v1 on `main` shares the same origin.
+
+## Code map
 
 | Piece | Role |
 |---|---|
-| `S` | Persisted settings, saved to `localStorage["trussSpacer"]`. All reads and writes are wrapped in try/catch. |
-| `UF` | Unit factors to mm. **All internal maths is in millimetres.** |
-| `parseSections()` | String to array of section lengths in mm, or `null` if invalid. |
+| `S` (`app.js`) | Working settings: the job's settings merged with the open truss. **Write through `put(key, value)`**, which also updates the job. Saved via `store.js`. All storage access is wrapped in try/catch. |
+| `store.js` | `load()`, `save()`, `newJob()`, `newTruss()`, `cleanJob()`, `toFile()` and `fromFile()`. It cleans and validates everything it loads or imports. |
+| `spacing.js` | `UF` (unit factors to mm; **all internal maths is in millimetres**), `parseSections(str, S)`, `compute(S)`, `fmt(mm, signed, S)`, `rnd(mm, S)` and `markTxt(row, S)`. Each takes `S` as a parameter. `app.js` wraps them as `fmt(mm, signed)` and so on, using the current `S`. |
 | `compute()` | Core maths. Returns `{L, secs, joins, pos, rows, warn, n}` or `{err}`. Each row is `{i, p, mark, sec, off, gap, near}`. |
-| `fmt(mm, signed)` | Display formatter for each unit, including feet and fractional inches. |
-| `rnd(mm)` | Rounds to `S.round`. |
-| `render()` | Draws the summary, table and warnings, then calls `svgDraw()`. Stores the last result in `window._r`. |
+| `render()` | Draws the tabs, then either `renderRig()` or the truss view (summary, table, warnings and `svgDraw()`). Stores the last result in `window._r`. |
 | `svgDraw(r)` | The on-screen truss drawing (SVG, coloured from CSS tokens). |
 | `fillChips()` and chip handler | Quick-entry buttons for the truss box. |
-| `buildPng()` | Canvas export, with fixed light colours for printing. |
+| `buildPng()` | Canvas export, with fixed light colours for printing. The title is the truss name, with the job name and date at top right. |
 | Export overlay | Preview, **Save PNG** and **Share**. Save uses the claude.ai `downloads` API when present (`getDownloads()`), otherwise an `<a download>` from the blob URL. **Share** uses `navigator.share({files})` and shows only when `navigator.canShare` accepts a PNG file. |
 
 ## Next steps the owner has mentioned or been offered
@@ -78,7 +96,8 @@ It was built in a claude.ai chat as a single-page web app published as a Claude 
 ## Conventions
 
 - Australian English in UI copy ("metres", "centre"). Dates use the `en-AU` locale.
-- Keep it one file unless a PWA or wrapper needs more. Use no frameworks.
+- Keep to a few plain files: no frameworks and no build step. Every file the app loads must be listed in `ASSETS` in `sw.js` and copied by `.github/workflows/pages.yml`.
+- Escape user text (job and truss names) with `esc()` before putting it into HTML.
 - Phone-first: touch targets of at least 42–50px, no horizontal scroll at 360–412px width, and safe-area insets respected.
 - Colours only via CSS tokens. Every new colour needs a light value and a dark value.
 - Wrap all `localStorage` access in try/catch.

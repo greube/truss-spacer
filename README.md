@@ -8,6 +8,7 @@ Open `index.html` in any browser, or serve the folder:
 
 ```sh
 python3 -m http.server 8000
+node --test tests/*.test.js   # maths and storage tests
 # then open http://localhost:8000 on your phone (same Wi-Fi) or desktop
 ```
 
@@ -21,6 +22,7 @@ Open that URL in Chrome, then ⋮ → **Add to Home screen** → **Install**. It
 
 ## Features
 
+- Jobs: save several rigs by name, each with any number of named trusses, plus a rig overview. Share a job file with crew or another phone.
 - Truss as sections (`3+3+2`, `4x2.5`) with quick-add buttons
 - Layouts: set end gaps (same or different each end), equal gaps, centred, fixed gap
 - Measure from left, centre or right

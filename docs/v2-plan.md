@@ -73,7 +73,7 @@ Later, a photo or PDF of the plot and its key fills in the trusses and fixtures 
 
 ## Build order
 
-1. Jobs with multiple trusses, entered by hand. The v1 spacer works on each truss.
+1. ✅ Jobs with multiple trusses, entered by hand. The v1 spacer works on each truss. Done on 16 Nov 2026.
 2. Fixture database and circuit grouping, plus the circuit and Socapex sheet.
 3. DMX cable lists, plus the pull list.
 4. Plot scanning.
