@@ -14,7 +14,7 @@ It was built in a claude.ai chat as a single-page web app published as a Claude 
 
   The app makes no external requests.
 - **PWA**: `sw.js` precaches every file in its `ASSETS` list and serves stale-while-revalidate. **Add any new file to `ASSETS`.** The SW only registers over http(s).
-- **Deploy**: `.github/workflows/pages.yml` publishes only the app files to GitHub Pages on every push to `main`. It stamps `VERSION` in `sw.js` with the commit SHA so each deploy gets a fresh cache. URL: https://greube.github.io/truss-spacer/
+
 - The original artifact host injected the `<!doctype>`/`<head>` skeleton and a small CSS reset. Both have been inlined at the top of `index.html`, so the file now runs standalone. Open it in a browser or serve the folder.
 - There are no tests yet.
 
