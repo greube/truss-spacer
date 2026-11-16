@@ -7,6 +7,8 @@ const BUILD = "dev";
 const SCOPE = new URL(self.registration.scope).pathname;   // e.g. /truss-spacer/
 const PREFIX = "ts:" + SCOPE + ":";
 const VERSION = PREFIX + BUILD;
+// Caches named "ts-<sha>" came from the live app before this scheme; only the live app may clear them
+const ownsLegacy = !SCOPE.endsWith("/v2/");
 const ASSETS = [
   "./",
   "index.html",
@@ -35,7 +37,7 @@ self.addEventListener("install", e => {
 self.addEventListener("activate", e => {
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== VERSION && (k.startsWith(PREFIX) || k.startsWith("ts-"))).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k !== VERSION && (k.startsWith(PREFIX) || ownsLegacy && k.startsWith("ts-"))).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
