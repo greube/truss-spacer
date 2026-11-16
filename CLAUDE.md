@@ -21,7 +21,11 @@ It was built in a claude.ai chat as a single-page web app published as a Claude 
 
   The app makes no external requests.
 - **PWA**: `sw.js` precaches every file in its `ASSETS` list and serves stale-while-revalidate. **Add any new file to `ASSETS`.** The SW only registers over http(s).
-- **Deploy**: `.github/workflows/pages.yml` publishes only the app files to GitHub Pages on every push to `main`. It stamps `VERSION` in `sw.js` with the commit SHA so each deploy gets a fresh cache. URL: https://greube.github.io/truss-spacer/
+- **Deploy**: `.github/workflows/pages.yml` (on `main`) publishes `main` at https://greube.github.io/truss-spacer/ and the `v2` branch as a preview at https://greube.github.io/truss-spacer/v2/.
+  - The preview is labelled "Truss Spacer v2 preview" / "TS v2" so it installs as a separate app.
+  - A push to `v2` runs `.github/workflows/preview-v2.yml` (on `v2` only), which triggers the main workflow via `workflow_run`. Deploys always run from `main`, so they pass the Pages environment's branch rule.
+  - Each copy's `sw.js` gets `BUILD` stamped with its commit.
+  - **Both copies share one origin.** `sw.js` names caches by scope and only serves its own `ASSETS`, so the live app never intercepts `/v2/` or deletes the preview's cache. They also share `localStorage`: v2 reads but never writes v1's `trussSpacer` key.
 - The original artifact host injected the `<!doctype>`/`<head>` skeleton and a small CSS reset. Both have been inlined at the top of `index.html`, so the file now runs standalone. Open it in a browser or serve the folder.
 - **Tests**: `node --test tests/*.test.js`.
   - `tests/spacing.test.js` checks `js/spacing.js` against 260 cases recorded from v1 in Chromium (`tests/v1-golden.json`). If it fails, the maths has changed.
