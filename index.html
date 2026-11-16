@@ -11,7 +11,6 @@ img{max-width:100%}
 [hidden]{display:none!important}
 </style>
 <title>Truss Spacer</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#121418">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
@@ -231,7 +230,7 @@ footer b{color:var(--fg);font-weight:600}
       </div>
       <div class="sheetimg"><img id="sheetImg" alt="Truss plot with fixture measurements"></div>
       <p class="hint" id="sheetHint"></p>
-      <div class="btns"><button class="copy primary" id="saveBtn" type="button">Save PNG</button></div>
+      <div class="btns"><button class="copy primary" id="saveBtn" type="button">Save PNG</button><button class="copy" id="shareBtn" type="button" hidden>Share</button></div>
     </div>
   </div>
 
@@ -572,21 +571,46 @@ footer b{color:var(--fg);font-weight:600}
     if(!pngBlob)return;
     if(pngUrl)URL.revokeObjectURL(pngUrl);pngUrl=URL.createObjectURL(pngBlob);
     $("sheetImg").src=pngUrl;
-    const d=await getDownloads();
-    $("saveBtn").hidden=!d;
-    $("sheetHint").textContent=d?"Saves a PNG you can share to the crew or print.":"Press and hold the image to save or share it.";
+    $("saveBtn").hidden=false;
+    $("shareBtn").hidden=!canShareFile();
+    $("sheetHint").textContent=canShareFile()?"Save the PNG, or share it straight to the crew.":"Saves a PNG you can send to the crew or print.";
     $("sheet").hidden=false;$("sheetClose").focus();
   };
   $("sheetClose").onclick=()=>{$("sheet").hidden=true};
   $("sheet").addEventListener("click",e=>{if(e.target.id==="sheet")$("sheet").hidden=true});
+  const pngName=()=>`truss-plot-${S.sections.replace(/[^\dx.]+/gi,"-").replace(/^-|-$/g,"")}-${window._r.n}fx.png`;
+  const pngFile=()=>new File([pngBlob],pngName(),{type:"image/png"});
+  function canShareFile(){
+    try{return !!(pngBlob&&navigator.canShare&&navigator.share&&navigator.canShare({files:[pngFile()]}))}catch(e){return false}
+  }
+  // Plain browser download: works in Chrome on Android and desktop
+  function anchorSave(){
+    const a=document.createElement("a");a.href=pngUrl;a.download=pngName();a.rel="noopener";
+    document.body.appendChild(a);a.click();a.remove();
+  }
   $("saveBtn").onclick=async()=>{
-    const d=await getDownloads();if(!d||!pngBlob)return;
-    const name=`truss-plot-${S.sections.replace(/[^\dx.]+/gi,"-").replace(/^-|-$/g,"")}-${window._r.n}fx.png`;
-    try{await d.save({filename:name,data:pngBlob});$("sheetHint").textContent="Saved."}
-    catch(e){
-      if(e&&e.code==="declined")$("sheetHint").textContent="Not saved. Tap Save PNG to try again.";
-      else if(e&&e.code==="rate_limited")$("sheetHint").textContent="A save prompt is already open. Finish that one first.";
-      else{$("saveBtn").hidden=true;$("sheetHint").textContent="Saving isn't available here. Press and hold the image to save it."}
+    if(!pngBlob)return;
+    const d=await getDownloads();
+    if(d){ // inside claude.ai the artifact runtime handles saving
+      try{await d.save({filename:pngName(),data:pngBlob});$("sheetHint").textContent="Saved.";return}
+      catch(e){
+        if(e&&e.code==="declined"){$("sheetHint").textContent="Not saved. Tap Save PNG to try again.";return}
+        if(e&&e.code==="rate_limited"){$("sheetHint").textContent="A save prompt is already open. Finish that one first.";return}
+        // anything else: fall through to a normal download
+      }
+    }
+    try{anchorSave();$("sheetHint").textContent="Saved to your Downloads."}
+    catch(e){$("sheetHint").textContent="Couldn't save here. Press and hold the image to save it."}
+  };
+  $("shareBtn").onclick=async()=>{
+    if(!pngBlob)return;
+    const r=window._r;
+    try{
+      await navigator.share({files:[pngFile()],title:"Truss plot",text:`Truss ${S.sections.replace(/\s/g,"")} = ${fmt(r.L)}, ${r.n} fixtures`});
+      $("sheetHint").textContent="Shared.";
+    }catch(e){
+      if(e&&e.name==="AbortError")return; // user closed the share sheet
+      $("sheetHint").textContent="Sharing didn't work. Save the PNG and send it from your gallery instead.";
     }
   };
 
