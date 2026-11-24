@@ -34,7 +34,9 @@ const ASSETS = [
 ];
 
 self.addEventListener("install", e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  // cache: "reload" skips the browser's HTTP cache (GitHub Pages allows 10 minutes), so a new version
+  // never gets saved with stale files
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(ASSETS.map(a => new Request(a, { cache: "reload" })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", e => {
@@ -57,7 +59,8 @@ self.addEventListener("fetch", e => {
   const key = shell ? "index.html" : url.pathname;
   e.respondWith(caches.open(VERSION).then(async cache => {
     const hit = await cache.match(key, { ignoreSearch: shell });
-    const net = fetch(req).then(res => {
+    // "no-cache" checks with the server (a quick 304 if unchanged) instead of trusting the HTTP cache
+    const net = fetch(url.href, { cache: "no-cache" }).then(res => {
       if (res && res.ok && res.type === "basic") cache.put(key, res.clone());
       return res;
     }).catch(() => null);
