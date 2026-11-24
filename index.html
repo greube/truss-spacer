@@ -138,6 +138,11 @@ tr.done .num{border-color:var(--ok);background:var(--ok);color:var(--bg)}
 .hint{margin:0;color:var(--muted);font-size:14px}
 footer{color:var(--muted);font-size:13px;line-height:1.5}
 footer b{color:var(--fg);font-weight:600}
+.offwrap{display:grid;gap:6px;margin-top:8px}
+.offrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px}
+.offrow .seg button{min-width:72px;flex:0 0 auto}
+.offhint{color:var(--muted);font-size:13px;line-height:1.35}
+.offhint b{color:var(--accent);font-weight:600}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -189,6 +194,17 @@ footer b{color:var(--fg);font-weight:600}
           <button type="button" data-v="left">Left end</button>
           <button type="button" data-v="centre">Centre</button>
           <button type="button" data-v="right">Right end</button>
+        </div>
+        <div class="offwrap" id="offWrap" hidden>
+          <span class="lab">Truss off centre <em class="u">m</em></span>
+          <div class="offrow">
+            <input type="number" id="cOff" step="any" min="0" value="0" inputmode="decimal" aria-label="How far the middle of the truss is off your centre line">
+            <div class="seg" id="cDir" role="group" aria-label="Which side of centre the truss sits">
+              <button type="button" data-v="left">Left</button>
+              <button type="button" data-v="right">Right</button>
+            </div>
+          </div>
+          <small class="offhint" id="offHint"></small>
         </div></div>
     </div>
 
@@ -255,7 +271,7 @@ footer b{color:var(--fg);font-weight:600}
 <script>
 (function(){
   const $=id=>document.getElementById(id);
-  const S={sections:"3+3+2",count:6,mode:"edge",inset:0.25,insetR:0.25,diffEnds:false,spacing:1.2,ref:"left",unit:"m",round:5,joinWarn:100};
+  const S={sections:"3+3+2",count:6,mode:"edge",inset:0.25,insetR:0.25,diffEnds:false,spacing:1.2,ref:"left",cOff:0,cDir:"right",unit:"m",round:5,joinWarn:100};
   try{Object.assign(S,JSON.parse(localStorage.getItem("trussSpacer")||"{}"))}catch(e){}
   let done=new Set(), sel=-1, lastKey="";
   let showSec=false; // deliberately not saved: starts off every time the app opens
@@ -282,6 +298,9 @@ footer b{color:var(--fg);font-weight:600}
     return (signed&&neg?"−":"")+s;
   }
   const rnd=mm=>S.round?Math.round(mm/S.round)*S.round:mm;
+  // How far the middle of the truss sits right (+) or left (−) of the centre line, in mm
+  const shiftMM=()=>S.ref==="centre"?(S.cDir==="left"?-1:1)*Math.abs(+S.cOff||0)*UF[S.unit]:0;
+  const offTxt=()=>{const s=shiftMM();return Math.abs(s)<0.5?"":`truss ${fmt(Math.abs(s))} ${s<0?"left":"right"} of centre`};
 
   function parseSections(str){
     const parts=String(str).replace(/[,\-]/g,"+").split(/[+\s]+/).filter(Boolean);
@@ -312,16 +331,18 @@ footer b{color:var(--fg);font-weight:600}
     }
     const joins=[];let acc=0;secs.forEach((s,i)=>{if(i)joins.push(acc);acc+=s});
     const jw=+S.joinWarn||0;
+    // where 0 is, from the left end: the ends, or the centre line (the truss middle, moved by the off-centre setting)
+    const zero=S.ref==="left"?0:S.ref==="right"?L:L/2-shiftMM();
     const rows=pos.map((p,i)=>{
       let si=0,a=0; while(si<secs.length-1&&p>=a+secs[si]){a+=secs[si];si++}
       const near=joins.some(j=>Math.abs(j-p)<jw);
-      let d=S.ref==="left"?p:S.ref==="right"?L-p:p-L/2;
+      let d=S.ref==="left"?p:S.ref==="right"?L-p:p-zero;
       const fromR=S.ref==="right";
       return {i,p,mark:rnd(d),sec:fromR?secs.length-si:si+1,off:rnd(fromR?a+secs[si]-p:p-a),near};
     });
     if(S.ref==="right") rows.reverse();
     rows.forEach((row,k)=>row.gap=k?Math.abs(row.p-rows[k-1].p):null);
-    return {L,secs,joins,pos,rows,warn,n};
+    return {L,secs,joins,pos,rows,warn,n,zero};
   }
 
   function svgDraw(r){
@@ -349,9 +370,15 @@ footer b{color:var(--fg);font-weight:600}
       if(showNum) h+=`<text x="${cx}" y="${y2+56}" text-anchor="middle" font-family="var(--f-num)" font-weight="600" font-size="15" fill="${col}">${rowNo(row)}</text>`;
       h+=`<rect x="${cx-14}" y="${y1}" width="28" height="100" fill="transparent"/></g>`;
     });
-    const lx=S.ref==="right"?W-P:S.ref==="centre"?W/2:P;
-    if(S.ref==="centre") h+=`<line x1="${W/2}" y1="${y1-4}" x2="${W/2}" y2="${y2+4}" stroke="var(--accent)" stroke-dasharray="4 4" stroke-width="2"/>`;
-    h+=`<text x="${lx}" y="${146}" text-anchor="${S.ref==="right"?"end":S.ref==="centre"?"middle":"start"}" font-family="var(--f-body)" font-size="13" font-weight="600" letter-spacing="1.5" fill="var(--accent)">▲ 0 HERE</text>`;
+    const zx=X(Math.max(0,Math.min(r.L,r.zero))), off=r.zero<-0.5?"left":r.zero>r.L+0.5?"right":"";
+    let lab="▲ 0 HERE", anchor=S.ref==="right"?"end":S.ref==="left"?"start":"middle";
+    if(S.ref==="centre"){
+      if(!off) h+=`<line x1="${zx}" y1="${y1-4}" x2="${zx}" y2="${y2+4}" stroke="var(--accent)" stroke-dasharray="4 4" stroke-width="2"/>`;
+      if(off==="left"){lab=`◀ 0 IS ${fmt(-r.zero).toUpperCase()} PAST THIS END`;anchor="start"}
+      else if(off==="right"){lab=`0 IS ${fmt(r.zero-r.L).toUpperCase()} PAST THIS END ▶`;anchor="end"}
+      else if(zx<P+60)anchor="start";else if(zx>W-P-60)anchor="end";
+    }
+    h+=`<text x="${zx}" y="${146}" text-anchor="${anchor}" font-family="var(--f-body)" font-size="13" font-weight="600" letter-spacing="1.5" fill="var(--accent)">${lab}</text>`;
     svg.innerHTML=h;
   }
   let numMap=new Map();
@@ -361,6 +388,8 @@ footer b{color:var(--fg);font-weight:600}
     const r=compute();
     document.querySelectorAll(".u").forEach(e=>e.textContent=S.unit);
     $("insetWrap").hidden=S.mode!=="edge";
+    $("offWrap").hidden=S.ref!=="centre";
+    document.querySelectorAll("#cDir button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===S.cDir));
     $("insetRWrap").hidden=!S.diffEnds; $("insetLab").textContent=S.diffEnds?"Left end":"End gap"; $("spacingWrap").hidden=S.mode!=="fixed";
     document.querySelectorAll("#mode button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===S.mode));
     document.querySelectorAll("#ref button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===S.ref));
@@ -374,7 +403,9 @@ footer b{color:var(--fg);font-weight:600}
     $("sLen").textContent=fmt(r.L); $("sGap").textContent=gap!=null?fmt(gap):"—"; {const eL=r.pos[0],eR=r.L-r.pos[r.pos.length-1],same=Math.abs(eL-eR)<0.5;
       $("sEnd").textContent=same?fmt(eL):`L ${fmt(eL)}\nR ${fmt(eR)}`;$("sEnd").classList.toggle("two",!same);
       $("sEndLab").textContent=same?"Each end":"Ends";}
-    const refTxt={left:"the left end",right:"the right end",centre:"the centre of the truss (− is left, + is right)"}[S.ref];
+    const z=r.zero, centreAt=z<-0.5?`${fmt(-z)} past the left end`:z>r.L+0.5?`${fmt(z-r.L)} past the right end`:`${fmt(z)} from the left end`;
+    if(S.ref==="centre") $("offHint").innerHTML=Math.abs(shiftMM())<0.5?`Leave at 0 if the middle of the truss is on your centre line.`:`Your centre line (0) is <b>${centreAt}</b> of the truss.`;
+    const refTxt={left:"the left end",right:"the right end",centre:offTxt()?`your centre line, ${centreAt} (− is left, + is right)`:"the centre of the truss (− is left, + is right)"}[S.ref];
     $("refNote").textContent=`Measured from ${refTxt}. Tap a row to tick it off.`;
     $("thMark").textContent={left:"From left",right:"From right",centre:"From centre"}[S.ref];
     $("rows").innerHTML=r.rows.map((row,k)=>{
@@ -419,7 +450,7 @@ footer b{color:var(--fg);font-weight:600}
   // keep focus (and the keyboard) in the field when tapping + while typing
   $("chips").addEventListener("mousedown",e=>{if(document.activeElement===$("sections")&&e.target.closest('[data-k="+"]'))e.preventDefault()});
 
-  function sync(){fillChips();$("sections").value=S.sections;$("count").value=S.count;$("inset").value=S.inset;$("insetR").value=S.insetR;$("diffEnds").checked=!!S.diffEnds;$("spacing").value=S.spacing;$("unit").value=S.unit;$("joinWarn").value=S.joinWarn;fillRound()}
+  function sync(){fillChips();$("sections").value=S.sections;$("count").value=S.count;$("inset").value=S.inset;$("insetR").value=S.insetR;$("diffEnds").checked=!!S.diffEnds;$("spacing").value=S.spacing;$("cOff").value=S.cOff;$("unit").value=S.unit;$("joinWarn").value=S.joinWarn;fillRound()}
   sync();
 
   const upd=()=>{save();render()};
@@ -431,6 +462,8 @@ footer b{color:var(--fg);font-weight:600}
   $("insetR").addEventListener("input",e=>{S.insetR=e.target.value;upd()});
   $("diffEnds").addEventListener("change",e=>{S.diffEnds=e.target.checked;if(S.diffEnds)S.insetR=S.inset,$("insetR").value=S.insetR;upd()});
   $("spacing").addEventListener("input",e=>{S.spacing=e.target.value;upd()});
+  $("cOff").addEventListener("input",e=>{S.cOff=e.target.value;upd()});
+  document.querySelectorAll("#cDir button").forEach(b=>b.onclick=()=>{S.cDir=b.dataset.v;upd()});
   $("joinWarn").addEventListener("input",e=>{S.joinWarn=e.target.value;upd()});
   $("showSec").checked=false;
   $("showSec").addEventListener("change",e=>{showSec=e.target.checked;render()});
@@ -439,7 +472,7 @@ footer b{color:var(--fg);font-weight:600}
     const f=UF[S.unit]/UF[e.target.value], conv=v=>+(v*f).toFixed(e.target.value==="mm"?0:3);
     const secs=parseSections(S.sections);
     if(secs) S.sections=secs.map(s=>+(s/UF[e.target.value]).toFixed(e.target.value==="mm"?0:3)).join("+");
-    S.inset=conv(+S.inset||0);S.insetR=conv(+S.insetR||0);S.spacing=conv(+S.spacing||0);S.unit=e.target.value;S.round=-1;sync();upd()});
+    S.inset=conv(+S.inset||0);S.insetR=conv(+S.insetR||0);S.spacing=conv(+S.spacing||0);S.cOff=conv(+S.cOff||0);S.unit=e.target.value;S.round=-1;sync();upd()});
   document.querySelectorAll("#mode button").forEach(b=>b.onclick=()=>{S.mode=b.dataset.v;upd()});
   document.querySelectorAll("#ref button").forEach(b=>b.onclick=()=>{S.ref=b.dataset.v;upd()});
 
@@ -449,7 +482,7 @@ footer b{color:var(--fg);font-weight:600}
 
   $("copy").onclick=async()=>{
     const r=window._r;if(!r||r.err)return;
-    const head=`Truss ${S.sections.replace(/\s/g,"")} = ${fmt(r.L)}, ${r.n} fixtures, gap ${r.n>1?fmt(r.pos[1]-r.pos[0]):"—"}\nMarks from ${({left:"left end",right:"right end",centre:"centre"})[S.ref]}:`;
+    const head=`Truss ${S.sections.replace(/\s/g,"")} = ${fmt(r.L)}, ${r.n} fixtures, gap ${r.n>1?fmt(r.pos[1]-r.pos[0]):"—"}\nMarks from ${({left:"left end",right:"right end",centre:"centre"})[S.ref]}${offTxt()?` (${offTxt()})`:""}:`;
     const body=r.rows.map((row,k)=>`${k+1}. ${S.ref==="centre"&&row.mark>0?"+":""}${fmt(row.mark,true)}${showSec?`  (sec ${row.sec} +${fmt(row.off)})`:""}${row.near?" NEAR JOIN":""}`).join("\n");
     const txt=head+"\n"+body, btn=$("copy");
     try{await navigator.clipboard.writeText(txt);btn.textContent="Copied"}catch(err){btn.textContent="Copy failed"}
@@ -480,7 +513,7 @@ footer b{color:var(--fg);font-weight:600}
     T(new Date().toLocaleDateString("en-AU",{day:"numeric",month:"short",year:"numeric"}),W-P,110,`500 32px ${FB}`,C.muted,"right");
     const gap=n>1?fmt(r.pos[1]-r.pos[0]):"—";
     T(`Truss ${S.sections.replace(/\s/g,"")} = ${fmt(r.L)}   ·   ${n} fixture${n>1?"s":""}   ·   ${MODE_NAME[S.mode]}   ·   Gap ${gap}`,P,165,`500 34px ${FB}`,C.ink);
-    T(`Marks measured from the ${REF_NAME[S.ref]}${S.ref==="centre"?" (− left, + right)":""}${S.mode==="edge"?(S.diffEnds?`   ·   End gaps: left ${fmt((+S.inset||0)*UF[S.unit])}, right ${fmt((+S.insetR||0)*UF[S.unit])}`:`   ·   End gap ${fmt((+S.inset||0)*UF[S.unit])}`):""}`,P,212,`400 30px ${FB}`,C.muted);
+    T(`Marks measured from the ${REF_NAME[S.ref]}${S.ref==="centre"?(offTxt()?` line, ${offTxt()} (− left, + right)`:" (− left, + right)"):""}${S.mode==="edge"?(S.diffEnds?`   ·   End gaps: left ${fmt((+S.inset||0)*UF[S.unit])}, right ${fmt((+S.insetR||0)*UF[S.unit])}`:`   ·   End gap ${fmt((+S.inset||0)*UF[S.unit])}`):""}`,P,212,`400 30px ${FB}`,C.muted);
 
     // Truss
     const y1=300,y2=360;
@@ -518,10 +551,15 @@ footer b{color:var(--fg);font-weight:600}
     T("GAPS",P-20,yc,`600 22px ${FB}`,C.muted,"right","middle");
 
     // Running marks from reference
-    const yr=620, rx=S.ref==="right"?X(r.L):S.ref==="centre"?X(r.L/2):X(0);
+    const yr=620, zOff=r.zero<-0.5?-1:r.zero>r.L+0.5?1:0, rx=X(Math.max(0,Math.min(r.L,r.zero)));
     c.beginPath();c.moveTo(rx,yr-30);c.lineTo(rx-14,yr-4);c.lineTo(rx+14,yr-4);c.closePath();c.fillStyle=C.accent;c.fill();
-    T("0",S.ref==="right"?rx-22:rx+22,yr-14,`700 30px ${FM}`,C.accent,S.ref==="right"?"right":"left","middle");
-    L(rx,y2+4,rx,yr-34,C.accent,2,[8,8]);
+    if(zOff){ // centre line is beyond the truss: point at it from the nearest end
+      T(zOff<0?`◀ 0 is ${fmt(-r.zero)} past this end`:`0 is ${fmt(r.zero-r.L)} past this end ▶`,zOff<0?rx+22:rx-22,yr-14,`700 26px ${FM}`,C.accent,zOff<0?"left":"right","middle");
+    }else{
+      const toRight=S.ref==="right"||(S.ref==="centre"&&rx>W-P-60);
+      T("0",toRight?rx-22:rx+22,yr-14,`700 30px ${FM}`,C.accent,toRight?"right":"left","middle");
+      L(rx,y2+4,rx,yr-34,C.accent,2,[8,8]);
+    }
     // Mark labels: horizontal when they fit, otherwise slanted just enough that neighbours clear each other
     const fs=small?24:30, mf=`600 ${fs}px ${FM}`, fs2=Math.round(fs*0.78), sf=`500 ${fs2}px ${FM}`;
     const secTxt=row=>`S${row.sec} +${fmt(row.off)}`;

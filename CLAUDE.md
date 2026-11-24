@@ -28,6 +28,11 @@ It was built in a claude.ai chat as a single-page web app published as a Claude 
    - `cells`, labelled "Centred": the end gap is half the fixture gap, `L/n` cells.
    - `fixed`: the user sets the gap (`S.spacing`) and the group is centred. The app warns if the group is longer than the truss and says how many fit.
 4. **Measure from** (`S.ref`): left end, centre (signed marks: − is left, + is right) or right end. When measuring from the right, the rows reverse, gaps read in that direction, and section numbers and in-section offsets count from the right.
+   - **Truss off centre** (`S.cOff` and `S.cDir`; appears only for Centre): trusses aren't always hung centred. The user enters how far the middle of the truss sits Left or Right of their centre line, and marks are measured from that line.
+     - `compute()` returns `zero`, the position of 0 from the left end. With no offset, `zero = L/2`, exactly as before.
+     - The hint, the marks note, the copied text and the plot header all state the offset and where the centre line falls on the truss.
+     - If the line is beyond the truss, the drawing and the plot point to it from the nearest end.
+     - Changing units converts the offset.
 5. **In-section distances switch** (`showSec`): off by default and **deliberately not persisted**, so it resets to off on every load. The owner asked for this. When it's on, it adds section number plus offset within the section to the table, the copied text and the exported image (a second line under each mark, and extra table columns).
 6. **Join warning**: fixtures within `S.joinWarn` mm (default 100) of a section join are flagged in red everywhere, because clamps foul the couplers.
 7. **Units and rounding**: m, mm, or ft+in with fractions down to 1/16. Marks round to tape-friendly steps (default 5 mm or 1/8″). Changing units converts the existing values.
