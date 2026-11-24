@@ -196,10 +196,10 @@ footer b{color:var(--fg);font-weight:600}
           <button type="button" data-v="right">Right end</button>
         </div>
         <div class="offwrap" id="offWrap" hidden>
-          <span class="lab">Truss off centre <em class="u">m</em></span>
+          <span class="lab"><span id="offLab">Truss off centre</span> <em class="u">m</em></span>
           <div class="offrow">
-            <input type="number" id="cOff" step="any" min="0" value="0" inputmode="decimal" aria-label="How far the middle of the truss is off your centre line">
-            <div class="seg" id="cDir" role="group" aria-label="Which side of centre the truss sits">
+            <input type="number" id="cOff" step="any" min="0" value="0" inputmode="decimal" aria-label="How far the truss is off your 0 point">
+            <div class="seg" id="cDir" role="group" aria-label="Which side of your 0 point the truss sits">
               <button type="button" data-v="left">Left</button>
               <button type="button" data-v="right">Right</button>
             </div>
@@ -271,7 +271,7 @@ footer b{color:var(--fg);font-weight:600}
 <script>
 (function(){
   const $=id=>document.getElementById(id);
-  const S={sections:"3+3+2",count:6,mode:"edge",inset:0.25,insetR:0.25,diffEnds:false,spacing:1.2,ref:"left",cOff:0,cDir:"right",unit:"m",round:5,joinWarn:100};
+  const S={sections:"3+3+2",count:6,mode:"edge",inset:0.25,insetR:0.25,diffEnds:false,spacing:1.2,ref:"left",cOff:0,cDir:"right",lOff:0,lDir:"right",unit:"m",round:5,joinWarn:100};
   try{Object.assign(S,JSON.parse(localStorage.getItem("trussSpacer")||"{}"))}catch(e){}
   let done=new Set(), sel=-1, lastKey="";
   let showSec=false; // deliberately not saved: starts off every time the app opens
@@ -298,9 +298,14 @@ footer b{color:var(--fg);font-weight:600}
     return (signed&&neg?"−":"")+s;
   }
   const rnd=mm=>S.round?Math.round(mm/S.round)*S.round:mm;
-  // How far the middle of the truss sits right (+) or left (−) of the centre line, in mm
-  const shiftMM=()=>S.ref==="centre"?(S.cDir==="left"?-1:1)*Math.abs(+S.cOff||0)*UF[S.unit]:0;
-  const offTxt=()=>{const s=shiftMM();return Math.abs(s)<0.5?"":`truss ${fmt(Math.abs(s))} ${s<0?"left":"right"} of centre`};
+  // Offset of the truss from the user's own 0 point, for Centre (truss middle vs centre line)
+  // and Left end (truss left end vs their 0). Each has its own saved value and direction.
+  const OFF={centre:["cOff","cDir"],left:["lOff","lDir"]};
+  const offKeys=()=>OFF[S.ref];
+  // How far the truss sits right (+) or left (−) of the 0 point, in mm
+  const shiftMM=()=>{const k=offKeys();return k?(S[k[1]]==="left"?-1:1)*Math.abs(+S[k[0]]||0)*UF[S.unit]:0};
+  const offTxt=()=>{const s=shiftMM();if(Math.abs(s)<0.5)return "";const d=`${fmt(Math.abs(s))} ${s<0?"left":"right"}`;
+    return S.ref==="centre"?`truss ${d} of centre`:`left end ${d} of your 0`};
 
   function parseSections(str){
     const parts=String(str).replace(/[,\-]/g,"+").split(/[+\s]+/).filter(Boolean);
@@ -332,11 +337,11 @@ footer b{color:var(--fg);font-weight:600}
     const joins=[];let acc=0;secs.forEach((s,i)=>{if(i)joins.push(acc);acc+=s});
     const jw=+S.joinWarn||0;
     // where 0 is, from the left end: the ends, or the centre line (the truss middle, moved by the off-centre setting)
-    const zero=S.ref==="left"?0:S.ref==="right"?L:L/2-shiftMM();
+    const zero=S.ref==="left"?-shiftMM():S.ref==="right"?L:L/2-shiftMM();
     const rows=pos.map((p,i)=>{
       let si=0,a=0; while(si<secs.length-1&&p>=a+secs[si]){a+=secs[si];si++}
       const near=joins.some(j=>Math.abs(j-p)<jw);
-      let d=S.ref==="left"?p:S.ref==="right"?L-p:p-zero;
+      let d=S.ref==="right"?L-p:p-zero;
       const fromR=S.ref==="right";
       return {i,p,mark:rnd(d),sec:fromR?secs.length-si:si+1,off:rnd(fromR?a+secs[si]-p:p-a),near};
     });
@@ -372,7 +377,7 @@ footer b{color:var(--fg);font-weight:600}
     });
     const zx=X(Math.max(0,Math.min(r.L,r.zero))), off=r.zero<-0.5?"left":r.zero>r.L+0.5?"right":"";
     let lab="▲ 0 HERE", anchor=S.ref==="right"?"end":S.ref==="left"?"start":"middle";
-    if(S.ref==="centre"){
+    if(S.ref==="centre"||(S.ref==="left"&&Math.abs(r.zero)>=0.5)){
       if(!off) h+=`<line x1="${zx}" y1="${y1-4}" x2="${zx}" y2="${y2+4}" stroke="var(--accent)" stroke-dasharray="4 4" stroke-width="2"/>`;
       if(off==="left"){lab=`◀ 0 IS ${fmt(-r.zero).toUpperCase()} PAST THIS END`;anchor="start"}
       else if(off==="right"){lab=`0 IS ${fmt(r.zero-r.L).toUpperCase()} PAST THIS END ▶`;anchor="end"}
@@ -388,8 +393,13 @@ footer b{color:var(--fg);font-weight:600}
     const r=compute();
     document.querySelectorAll(".u").forEach(e=>e.textContent=S.unit);
     $("insetWrap").hidden=S.mode!=="edge";
-    $("offWrap").hidden=S.ref!=="centre";
-    document.querySelectorAll("#cDir button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===S.cDir));
+    const ok=offKeys();
+    $("offWrap").hidden=!ok;
+    if(ok){
+      $("offLab").textContent=S.ref==="centre"?"Truss off centre":"Left end off your 0";
+      if(document.activeElement!==$("cOff"))$("cOff").value=S[ok[0]];
+      document.querySelectorAll("#cDir button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===S[ok[1]]));
+    }
     $("insetRWrap").hidden=!S.diffEnds; $("insetLab").textContent=S.diffEnds?"Left end":"End gap"; $("spacingWrap").hidden=S.mode!=="fixed";
     document.querySelectorAll("#mode button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===S.mode));
     document.querySelectorAll("#ref button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===S.ref));
@@ -403,9 +413,10 @@ footer b{color:var(--fg);font-weight:600}
     $("sLen").textContent=fmt(r.L); $("sGap").textContent=gap!=null?fmt(gap):"—"; {const eL=r.pos[0],eR=r.L-r.pos[r.pos.length-1],same=Math.abs(eL-eR)<0.5;
       $("sEnd").textContent=same?fmt(eL):`L ${fmt(eL)}\nR ${fmt(eR)}`;$("sEnd").classList.toggle("two",!same);
       $("sEndLab").textContent=same?"Each end":"Ends";}
-    const z=r.zero, centreAt=z<-0.5?`${fmt(-z)} past the left end`:z>r.L+0.5?`${fmt(z-r.L)} past the right end`:`${fmt(z)} from the left end`;
-    if(S.ref==="centre") $("offHint").innerHTML=Math.abs(shiftMM())<0.5?`Leave at 0 if the middle of the truss is on your centre line.`:`Your centre line (0) is <b>${centreAt}</b> of the truss.`;
-    const refTxt={left:"the left end",right:"the right end",centre:offTxt()?`your centre line, ${centreAt} (− is left, + is right)`:"the centre of the truss (− is left, + is right)"}[S.ref];
+    const z=r.zero, zeroAt=z<-0.5?`${fmt(-z)} past the left end`:z>r.L+0.5?`${fmt(z-r.L)} past the right end`:`${fmt(z)} from the left end`;
+    if(S.ref==="centre") $("offHint").innerHTML=Math.abs(shiftMM())<0.5?`Leave at 0 if the middle of the truss is on your centre line.`:`Your centre line (0) is <b>${zeroAt}</b> of the truss.`;
+    if(S.ref==="left") $("offHint").innerHTML=Math.abs(shiftMM())<0.5?`Leave at 0 to measure from the end of the truss. Use it when your 0 is somewhere else, such as a mark on the deck.`:`Your 0 is <b>${zeroAt}</b> of the truss.`;
+    const refTxt={left:offTxt()?`your 0 point, ${zeroAt}`:"the left end",right:"the right end",centre:offTxt()?`your centre line, ${zeroAt} (− is left, + is right)`:"the centre of the truss (− is left, + is right)"}[S.ref];
     $("refNote").textContent=`Measured from ${refTxt}. Tap a row to tick it off.`;
     $("thMark").textContent={left:"From left",right:"From right",centre:"From centre"}[S.ref];
     $("rows").innerHTML=r.rows.map((row,k)=>{
@@ -450,7 +461,7 @@ footer b{color:var(--fg);font-weight:600}
   // keep focus (and the keyboard) in the field when tapping + while typing
   $("chips").addEventListener("mousedown",e=>{if(document.activeElement===$("sections")&&e.target.closest('[data-k="+"]'))e.preventDefault()});
 
-  function sync(){fillChips();$("sections").value=S.sections;$("count").value=S.count;$("inset").value=S.inset;$("insetR").value=S.insetR;$("diffEnds").checked=!!S.diffEnds;$("spacing").value=S.spacing;$("cOff").value=S.cOff;$("unit").value=S.unit;$("joinWarn").value=S.joinWarn;fillRound()}
+  function sync(){fillChips();$("sections").value=S.sections;$("count").value=S.count;$("inset").value=S.inset;$("insetR").value=S.insetR;$("diffEnds").checked=!!S.diffEnds;$("spacing").value=S.spacing;$("cOff").value=offKeys()?S[offKeys()[0]]:0;$("unit").value=S.unit;$("joinWarn").value=S.joinWarn;fillRound()}
   sync();
 
   const upd=()=>{save();render()};
@@ -462,8 +473,8 @@ footer b{color:var(--fg);font-weight:600}
   $("insetR").addEventListener("input",e=>{S.insetR=e.target.value;upd()});
   $("diffEnds").addEventListener("change",e=>{S.diffEnds=e.target.checked;if(S.diffEnds)S.insetR=S.inset,$("insetR").value=S.insetR;upd()});
   $("spacing").addEventListener("input",e=>{S.spacing=e.target.value;upd()});
-  $("cOff").addEventListener("input",e=>{S.cOff=e.target.value;upd()});
-  document.querySelectorAll("#cDir button").forEach(b=>b.onclick=()=>{S.cDir=b.dataset.v;upd()});
+  $("cOff").addEventListener("input",e=>{const k=offKeys();if(k){S[k[0]]=e.target.value;upd()}});
+  document.querySelectorAll("#cDir button").forEach(b=>b.onclick=()=>{const k=offKeys();if(k){S[k[1]]=b.dataset.v;upd()}});
   $("joinWarn").addEventListener("input",e=>{S.joinWarn=e.target.value;upd()});
   $("showSec").checked=false;
   $("showSec").addEventListener("change",e=>{showSec=e.target.checked;render()});
@@ -472,7 +483,7 @@ footer b{color:var(--fg);font-weight:600}
     const f=UF[S.unit]/UF[e.target.value], conv=v=>+(v*f).toFixed(e.target.value==="mm"?0:3);
     const secs=parseSections(S.sections);
     if(secs) S.sections=secs.map(s=>+(s/UF[e.target.value]).toFixed(e.target.value==="mm"?0:3)).join("+");
-    S.inset=conv(+S.inset||0);S.insetR=conv(+S.insetR||0);S.spacing=conv(+S.spacing||0);S.cOff=conv(+S.cOff||0);S.unit=e.target.value;S.round=-1;sync();upd()});
+    S.inset=conv(+S.inset||0);S.insetR=conv(+S.insetR||0);S.spacing=conv(+S.spacing||0);S.cOff=conv(+S.cOff||0);S.lOff=conv(+S.lOff||0);S.unit=e.target.value;S.round=-1;sync();upd()});
   document.querySelectorAll("#mode button").forEach(b=>b.onclick=()=>{S.mode=b.dataset.v;upd()});
   document.querySelectorAll("#ref button").forEach(b=>b.onclick=()=>{S.ref=b.dataset.v;upd()});
 
@@ -513,7 +524,7 @@ footer b{color:var(--fg);font-weight:600}
     T(new Date().toLocaleDateString("en-AU",{day:"numeric",month:"short",year:"numeric"}),W-P,110,`500 32px ${FB}`,C.muted,"right");
     const gap=n>1?fmt(r.pos[1]-r.pos[0]):"—";
     T(`Truss ${S.sections.replace(/\s/g,"")} = ${fmt(r.L)}   ·   ${n} fixture${n>1?"s":""}   ·   ${MODE_NAME[S.mode]}   ·   Gap ${gap}`,P,165,`500 34px ${FB}`,C.ink);
-    T(`Marks measured from the ${REF_NAME[S.ref]}${S.ref==="centre"?(offTxt()?` line, ${offTxt()} (− left, + right)`:" (− left, + right)"):""}${S.mode==="edge"?(S.diffEnds?`   ·   End gaps: left ${fmt((+S.inset||0)*UF[S.unit])}, right ${fmt((+S.insetR||0)*UF[S.unit])}`:`   ·   End gap ${fmt((+S.inset||0)*UF[S.unit])}`):""}`,P,212,`400 30px ${FB}`,C.muted);
+    T(`Marks measured from the ${REF_NAME[S.ref]}${S.ref==="centre"?(offTxt()?` line, ${offTxt()} (− left, + right)`:" (− left, + right)"):S.ref==="left"&&offTxt()?` (${offTxt()})`:""}${S.mode==="edge"?(S.diffEnds?`   ·   End gaps: left ${fmt((+S.inset||0)*UF[S.unit])}, right ${fmt((+S.insetR||0)*UF[S.unit])}`:`   ·   End gap ${fmt((+S.inset||0)*UF[S.unit])}`):""}`,P,212,`400 30px ${FB}`,C.muted);
 
     // Truss
     const y1=300,y2=360;
@@ -553,10 +564,10 @@ footer b{color:var(--fg);font-weight:600}
     // Running marks from reference
     const yr=620, zOff=r.zero<-0.5?-1:r.zero>r.L+0.5?1:0, rx=X(Math.max(0,Math.min(r.L,r.zero)));
     c.beginPath();c.moveTo(rx,yr-30);c.lineTo(rx-14,yr-4);c.lineTo(rx+14,yr-4);c.closePath();c.fillStyle=C.accent;c.fill();
-    if(zOff){ // centre line is beyond the truss: point at it from the nearest end
+    if(zOff){ // 0 is beyond the truss: point at it from the nearest end
       T(zOff<0?`◀ 0 is ${fmt(-r.zero)} past this end`:`0 is ${fmt(r.zero-r.L)} past this end ▶`,zOff<0?rx+22:rx-22,yr-14,`700 26px ${FM}`,C.accent,zOff<0?"left":"right","middle");
     }else{
-      const toRight=S.ref==="right"||(S.ref==="centre"&&rx>W-P-60);
+      const toRight=S.ref==="right"||rx>W-P-60;
       T("0",toRight?rx-22:rx+22,yr-14,`700 30px ${FM}`,C.accent,toRight?"right":"left","middle");
       L(rx,y2+4,rx,yr-34,C.accent,2,[8,8]);
     }

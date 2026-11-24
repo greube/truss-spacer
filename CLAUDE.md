@@ -28,8 +28,10 @@ It was built in a claude.ai chat as a single-page web app published as a Claude 
    - `cells`, labelled "Centred": the end gap is half the fixture gap, `L/n` cells.
    - `fixed`: the user sets the gap (`S.spacing`) and the group is centred. The app warns if the group is longer than the truss and says how many fit.
 4. **Measure from** (`S.ref`): left end, centre (signed marks: − is left, + is right) or right end. When measuring from the right, the rows reverse, gaps read in that direction, and section numbers and in-section offsets count from the right.
-   - **Truss off centre** (`S.cOff` and `S.cDir`; appears only for Centre): trusses aren't always hung centred. The user enters how far the middle of the truss sits Left or Right of their centre line, and marks are measured from that line.
-     - `compute()` returns `zero`, the position of 0 from the left end. With no offset, `zero = L/2`, exactly as before.
+   - **Offsets from the user's own 0 point**, for Centre and Left end (not Right end). Each has its own saved value and direction: `S.cOff`/`S.cDir` for Centre and `S.lOff`/`S.lDir` for Left end, mapped in `OFF`.
+     - **Centre ("Truss off centre")**: trusses aren't always hung centred. The user enters how far the middle of the truss sits Left or Right of their centre line, and marks are measured from that line.
+     - **Left end ("Left end off your 0")**: how far the truss's left end sits Left or Right of their 0, such as a mark on the deck. Marks can then go negative.
+     - `compute()` returns `zero`, the position of 0 from the left end. With no offset, `zero` is `L/2` for Centre and 0 for Left end, so marks are unchanged.
      - The hint, the marks note, the copied text and the plot header all state the offset and where the centre line falls on the truss.
      - If the line is beyond the truss, the drawing and the plot point to it from the nearest end.
      - Changing units converts the offset.
