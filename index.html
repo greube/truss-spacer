@@ -689,7 +689,13 @@ footer b{color:var(--fg);font-weight:600}
 
   // Offline support: only when served over http(s), not when opened as a local file
   if("serviceWorker" in navigator&&/^https?:$/.test(location.protocol)){
-    window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{})});
+    window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").then(r=>r.update()).catch(()=>{})});
+    // A new version has just taken over: reload once so it shows now, not on the next open.
+    // Not on the very first install (there was no previous version to replace).
+    const hadSW=!!navigator.serviceWorker.controller;let reloaded=false;
+    navigator.serviceWorker.addEventListener("controllerchange",()=>{if(hadSW&&!reloaded){reloaded=true;location.reload()}});
+    // Android usually resumes the app rather than reopening it, so check again whenever it comes back on screen
+    document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{})});
   }
 })();
 </script>
