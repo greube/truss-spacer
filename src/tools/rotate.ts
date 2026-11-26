@@ -30,7 +30,7 @@ export class RotateTool implements Tool {
   onTap(s: V2, _m?: Mods) { this.pivot = this.app.camera.toWorld(s); this.app.requestDraw(); }
   private angleAt(s: V2) { const w = this.app.camera.toWorld(s); return Math.atan2(w.y - this.pivot.y, w.x - this.pivot.x); }
 
-  onDragStart(s: V2) { if (!this.app.selection.size) return; this.active = true; this.a0 = this.angleAt(s); this.angle = 0; }
+  onDragStart(s: V2, _m?: Mods) { if (!this.app.selection.size) return; this.active = true; this.a0 = this.angleAt(s); this.angle = 0; }
   onDrag(s: V2, m: Mods) {
     if (!this.active) return;
     const a = this.app;
