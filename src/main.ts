@@ -14,6 +14,8 @@ import { AddFixtureTool } from './tools/addFixture';
 import { MeasureTool } from './tools/measure';
 import { SpacingTool } from './tools/spacing';
 import { PowerTool } from './tools/power';
+import { CablingTool } from './tools/cabling';
+import { renderCablingPanel } from './ui/cablingPanel';
 import { handleKey, undo, redo, zoomToFit, pruneSelection } from './app/actions';
 import { setSettings } from './core/commands/ops';
 import * as ops from './core/commands/ops';
@@ -52,12 +54,13 @@ let hover: string | null = null;
 
 const spacingTool = new SpacingTool();
 const powerTool = new PowerTool();
-const tools: Record<string, Tool> = { select: new SelectTool(), rotate: new RotateTool(), addTruss: new AddTrussTool(), addFixture: new AddFixtureTool(), measure: new MeasureTool(), spacing: spacingTool, power: powerTool };
+const cablingTool = new CablingTool();
+const tools: Record<string, Tool> = { select: new SelectTool(), rotate: new RotateTool(), addTruss: new AddTrussTool(), addFixture: new AddFixtureTool(), measure: new MeasureTool(), spacing: spacingTool, power: powerTool, cabling: cablingTool };
 let active: Tool = tools.select;
 
 const shell = buildShell(document.getElementById('app')!, [
-  { id: 'select', icon: '↖', label: 'Select' }, { id: 'rotate', icon: '⟲', label: 'Rotate' }, { id: 'addTruss', icon: '▭', label: 'Truss' },
-  { id: 'addFixture', icon: '◉', label: 'Fixture' }, { id: 'spacing', icon: '⇔', label: 'Spacing' }, { id: 'power', icon: '⚡', label: 'Power' }, { id: 'measure', icon: '⇹', label: 'Measure', lapOnly: true },
+  { id: 'select', icon: '↖', label: 'Select' }, { id: 'rotate', icon: '⟲', label: 'Rotate', lapOnly: true }, { id: 'addTruss', icon: '▭', label: 'Truss' },
+  { id: 'addFixture', icon: '◉', label: 'Fixture' }, { id: 'spacing', icon: '⇔', label: 'Spacing' }, { id: 'power', icon: '⚡', label: 'Power' }, { id: 'cabling', icon: '⌁', label: 'DMX' }, { id: 'measure', icon: '⇹', label: 'Measure', lapOnly: true },
 ], { id: 'more', icon: '⋯', label: 'More' }, id => app.setTool(id), () => openMore());
 
 export const hooks = {
@@ -71,7 +74,7 @@ const app: AppCtx = {
   setTool(id) {
     const t = tools[id]; if (!t) return;
     active.deactivate(); active = t; t.activate(app); shell.setActiveTool(id); shell.stage.style.cursor = t.cursor; scheduleDraw();
-    if (typeof renderSpacing === 'function') { renderSpacing(); renderPower(id === 'power'); }
+    if (typeof renderSpacing === 'function') { renderSpacing(); renderPower(id === 'power'); renderCabling(id === 'cabling'); }
   },
   units: { fmt: (mm: number) => fmt(mm, false, app.doc.settings) },
   visible(e: Entity) {
@@ -137,6 +140,21 @@ function renderPower(open = false) {
   else if (open) pwSheet = shell.openSheet('Power', el => renderPowerPanel(el, app, powerTool.plan(), powerTool.current, pwHooks), () => { pwSheet = null; }, { panel: true });
 }
 powerTool.onPick = () => renderPower(true);
+// DMX panel, the same way
+let cbSheet: { refresh(): void; close(): void } | null = null;
+const cbHooks = { toast: (m: string, w?: boolean) => shell.toast(m, w), jobName: () => shell.jobName.textContent ?? '',
+  pick: (g: string | null) => { cablingTool.current = g; app.selection.clear(); renderCabling(true); scheduleDraw(); } };
+function renderCabling(open = false) {
+  const on = active.id === 'cabling';
+  shell.side.cablingSec.hidden = !on || shell.isPhone();
+  clear(shell.side.cabling);
+  if (!on) { if (cbSheet) { cbSheet.close(); cbSheet = null; } return; }
+  if (cablingTool.current && !cablingTool.plan().runs.some(r => r.group === cablingTool.current)) cablingTool.current = null;
+  if (!shell.isPhone()) { renderCablingPanel(shell.side.cabling, app, cablingTool.plan(), cablingTool.current, cbHooks); return; }
+  if (cbSheet) cbSheet.refresh();
+  else if (open) cbSheet = shell.openSheet('DMX', el => renderCablingPanel(el, app, cablingTool.plan(), cablingTool.current, cbHooks), () => { cbSheet = null; }, { panel: true });
+}
+cablingTool.onPick = () => renderCabling(true);
 async function exportPowerSheet() {
   const name = shell.jobName.textContent ?? '';
   const blob = await buildPowerPng(powerTool.plan(), app.doc, name);
@@ -156,12 +174,13 @@ function renderPanels() {
   renderInfo();
   renderSpacing();
   renderPower();
+  renderCabling();
   clear(shell.side.layers); renderLayers(shell.side.layers, app);
   clear(shell.side.positions); renderPositions(shell.side.positions, app);
   shell.unitSel.value = app.doc.settings.unit;
 }
 
-history.onChange(() => { powerTool.invalidate(); index.rebuild(app.doc); pruneSelection(app); lastSel = '\0'; renderPanels(); scheduleDraw(); hooks.afterChange(); });
+history.onChange(() => { powerTool.invalidate(); cablingTool.invalidate(); index.rebuild(app.doc); pruneSelection(app); lastSel = '\0'; renderPanels(); scheduleDraw(); hooks.afterChange(); });
 
 // Gestures on the plan go to the active tool; pinch and wheel always zoom
 new Gestures(shell.canvas, {
@@ -216,7 +235,7 @@ function openMore() {
     const box = document.createElement('div'); box.className = 'body';
     box.append(b('Hanging positions', () => shell.openSheet('Hanging positions', el2 => renderPositions(el2, app))),
       b('Layers & classes', () => shell.openSheet('Layers & classes', el2 => renderLayers(el2, app))),
-      b('Measure', () => app.setTool('measure')), b('Zoom to fit', () => zoomToFit(app)), b(theme === 'paper' ? 'Dark mode' : 'Paper mode (daylight)', () => shell.themeBtn.click()), b('Help', openHelp));
+      b('Rotate', () => app.setTool('rotate')), b('Measure', () => app.setTool('measure')), b('Zoom to fit', () => zoomToFit(app)), b(theme === 'paper' ? 'Dark mode' : 'Paper mode (daylight)', () => shell.themeBtn.click()), b('Help', openHelp));
     el.append(box);
   });
 }
@@ -229,7 +248,7 @@ window.addEventListener('orientationchange', () => setTimeout(resize, 150));
 /** Shows a document (a newly opened or imported job): fresh undo history, zoomed to fit. */
 function setDoc(d: Doc, name: string) {
   active.onDragCancel?.();
-  app.doc = d; history.reset(d); app.selection.clear(); index.rebuild(d); powerTool.invalidate();
+  app.doc = d; history.reset(d); app.selection.clear(); index.rebuild(d); powerTool.invalidate(); cablingTool.invalidate(); cablingTool.current = null; powerTool.current = null;
   shell.jobName.textContent = name; lastSel = '\0';
   renderPanels(); renderer.resize(); zoomToFit(app);
 }
@@ -259,4 +278,4 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') navigator.serviceWorker.getRegistration().then(r => r?.update()).catch(() => {}); });
 }
 // For automated tests and debugging
-(window as any).__cad = { app, jobs, renderer, shell, ops, spacingTool, powerTool, importBuffer: (buf: ArrayBuffer, name = 'Imported rig.mvr') => jobs.importFile(new Blob([buf]), name) };
+(window as any).__cad = { app, jobs, renderer, shell, ops, spacingTool, powerTool, cablingTool, importBuffer: (buf: ArrayBuffer, name = 'Imported rig.mvr') => jobs.importFile(new Blob([buf]), name) };
