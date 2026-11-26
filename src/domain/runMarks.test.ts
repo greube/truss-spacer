@@ -80,3 +80,26 @@ describe('marks on a run', () => {
   });
   test('no fixtures, no rows', () => { expect(runMarks(L, [], st(), { round: 5 })).toEqual([]); });
 });
+
+describe('sections that do not add up to their leg (review fix)', () => {
+  // leg 1 drawn 3700 with sections 3000+1000; leg 2 drawn 3000 with one 3000 section
+  const M = truss([[0, 0, 3700, 0, [3000, 1000]], [3700, 0, 3700, 3000, [3000]]]);
+  test('each leg starts its own sections, so past the corner is section 3', () => {
+    const rows = runMarks(M, fx([[3700, 100], [3700, 1500], [3200, 0]]), st(), { round: 5 });
+    const [r0, r1, r2] = rows; // sorted along the run: (3200,0), (3700,100), (3700,1500)
+    expect([r0.sec, r0.off]).toEqual([2, 200]);
+    expect([r1.sec, r1.off]).toEqual([3, 100]);
+    expect([r2.sec, r2.off]).toEqual([3, 1500]);
+  });
+  test('from end B the same fixtures count back from B', () => {
+    const rows = runMarks(M, fx([[3700, 100], [3700, 1500], [3200, 0]]), st({ ref: 'b' }), { round: 5 });
+    // reversed: (3700,1500) then (3700,100) then (3200,0)
+    expect(rows.map(r => [r.sec, r.off])).toEqual([[1, 1500], [1, 2900], [2, 500]]);
+  });
+  test('legMismatch lists legs whose sections disagree with the drawing', async () => {
+    const { legMismatch } = await import('./runMarks');
+    expect(legMismatch(M)).toEqual([{ leg: 0, sections: 4000, drawn: 3700 }]);
+    expect(legMismatch(truss([[0, 0, 8000, 0, [3000, 3000, 2000]]]))).toEqual([]);
+    expect(legMismatch(truss([[0, 0, 8000, 0, []]]))).toEqual([]);
+  });
+});

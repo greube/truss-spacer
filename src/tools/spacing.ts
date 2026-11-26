@@ -19,7 +19,7 @@ export class SpacingTool implements Tool {
     if (this.current && !app.doc.entities.has(this.current)) this.current = null;
     app.preview = (ctx, cam) => {
       const t = this.current ? (app.doc.entities.get(this.current) as Truss | undefined) : undefined;
-      if (t) drawSpacingOverlay(ctx, cam, app.doc, t, t.spacing ?? DEFAULT_SPACING, app.doc.settings);
+      if (t) drawSpacingOverlay(ctx, cam, app.doc, t, t.spacing ?? DEFAULT_SPACING, app.doc.settings, app.theme ?? 'dark');
     };
     app.notify(this.current ? '' : 'Tap a truss to see its tape marks.');
     app.requestDraw();

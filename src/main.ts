@@ -28,6 +28,7 @@ import { label as typeLabel } from './domain/fixtures/db';
 import { createJobs } from './ui/jobs';
 import { renderReview, renderPicker } from './ui/review';
 import { renderSpacingPanel } from './ui/spacingPanel';
+import { mismatchNote } from './ui/spacingText';
 import type { SpacingState } from './ui/spacingPanel';
 import { buildRunPng } from './ui/plotPng';
 import { runSections, runLength, zeroAlong } from './domain/runMarks';
@@ -75,6 +76,7 @@ const app: AppCtx = {
     return (l ? l.visible : true) && (c ? c.visible : true);
   },
   previewActive: false,
+  theme,
   cancelPreview() { active.onDragCancel?.(); },
   notify(msg) { shell.status.msg.textContent = msg; const s = shell.phoneMsg.firstElementChild as HTMLElement; s.textContent = msg; shell.phoneMsg.hidden = !msg; },
 };
@@ -123,7 +125,7 @@ async function exportRunImage(id: string, rows: MarkRow[], st: TrussSpacing, sho
   const t = app.doc.entities.get(id) as Truss | undefined; if (!t) return;
   const corners: number[] = []; let acc = 0; for (const l of t.legs.slice(0, -1)) { acc += Math.hypot(l.b.x - l.a.x, l.b.y - l.a.y); corners.push(acc); }
   const blob = await buildRunPng({ name: t.name, jobName: shell.jobName.textContent ?? '', sections: runSections(t), corners, length: runLength(t), zero: zeroAlong(t, st),
-    rows, st, S: app.doc.settings, showSec, provisional: t.state === 'draft' });
+    rows, st, S: app.doc.settings, showSec, provisional: t.state === 'draft', mismatch: mismatchNote(t, app.doc.settings) });
   if (!blob) { shell.toast("Couldn't draw the image.", true); return; }
   const url = URL.createObjectURL(blob), name = `truss-plot-${t.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'truss'}.png`;
   const file = new File([blob], name, { type: 'image/png' });
@@ -188,7 +190,7 @@ shell.redoBtn.onclick = () => redo(app);
 shell.fitBtn.onclick = () => zoomToFit(app);
 shell.unitSel.onchange = () => history.exec(setSettings({ unit: shell.unitSel.value as 'm' | 'mm' | 'ft' }));
 shell.themeBtn.onclick = () => {
-  theme = theme === 'dark' ? 'paper' : 'dark'; document.documentElement.dataset.theme = theme;
+  theme = theme === 'dark' ? 'paper' : 'dark'; app.theme = theme; document.documentElement.dataset.theme = theme;
   try { localStorage.setItem(THEME_KEY, theme); } catch { /* fine */ }
   shell.themeBtn.setAttribute('aria-pressed', String(theme === 'paper')); scheduleDraw();
 };

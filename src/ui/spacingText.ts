@@ -1,11 +1,19 @@
-import type { TrussSpacing } from '../core/model/types';
+import type { Truss, TrussSpacing } from '../core/model/types';
 import type { MarkRow } from '../domain/runMarks';
 import type { FmtSettings } from '../domain/spacing';
 import { fmt } from '../domain/spacing';
-import { markLabel } from '../domain/runMarks';
+import { markLabel, legMismatch } from '../domain/runMarks';
 import { formatSections } from './parse';
 
-export interface SpacingTextIn { name: string; sections: number[]; length: number; rows: MarkRow[]; st: TrussSpacing; S: FmtSettings; showSec: boolean; provisional: boolean }
+export interface SpacingTextIn { name: string; sections: number[]; length: number; rows: MarkRow[]; st: TrussSpacing; S: FmtSettings; showSec: boolean; provisional: boolean; mismatch?: string }
+
+/** A warning when a run's sections don't add up to its drawn legs ('' when they agree). */
+export function mismatchNote(t: Pick<Truss, 'legs'>, S: FmtSettings): string {
+  const m = legMismatch(t as Truss); if (!m.length) return '';
+  const f = (mm: number) => fmt(mm, false, S);
+  const parts = m.map(x => t.legs.length === 1 ? `its sections add up to ${f(x.sections)} but it is drawn ${f(x.drawn)}` : `leg ${x.leg + 1} sections add up to ${f(x.sections)} but it is drawn ${f(x.drawn)}`);
+  return `Check the truss: ${parts.join('; ')}. Marks use the drawing.`;
+}
 
 /** Plain-text marks list for texting to crew, in v1's format (name, truss line, "Marks from …:", one line per fixture). */
 export function spacingText(x: SpacingTextIn): string {
@@ -21,6 +29,6 @@ export function spacingText(x: SpacingTextIn): string {
     : `the centre${off ? ` (truss ${off} towards ${x.st.offsetSide === 'after' ? 'B' : 'A'})` : ''}, − towards A, + towards B`;
   const lines = x.rows.map((r, k) => `${r.unit ?? k + 1}. ${markLabel(r.mark, x.st, x.S)}${x.showSec ? `  (sec ${r.sec} +${f(r.off)})` : ''}`
     + `${r.near ? ' NEAR JOIN' : ''}${r.offLine != null ? ` OFF LINE ${f(r.offLine)}` : ''}${r.uneven ? ' UNEVEN GAP' : ''}`);
-  return [x.provisional ? 'PROVISIONAL: confirm the truss first' : null, x.name, `${truss}, ${n} fixture${n === 1 ? '' : 's'}, ${gapTxt}`, `Marks from ${from}:`, ...lines]
+  return [x.mismatch || null, x.provisional ? 'PROVISIONAL: confirm the truss first' : null, x.name, `${truss}, ${n} fixture${n === 1 ? '' : 's'}, ${gapTxt}`, `Marks from ${from}:`, ...lines]
     .filter((l): l is string => l != null).join('\n');
 }

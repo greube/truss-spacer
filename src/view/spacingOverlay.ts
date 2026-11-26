@@ -3,17 +3,18 @@ import type { FmtSettings } from '../domain/spacing';
 import type { Camera } from './camera';
 import { runMarks, markLabel, pointAt, zeroAlong, runLength } from '../domain/runMarks';
 
-const ACCENT = '#ffb21e', WARN = '#ff6b4a', INK = '#e9e6df', MUTED = '#9097a3';
+const COLOURS = { dark: { accent: '#ffb21e', warn: '#ff6b4a', ink: '#e9e6df', muted: '#9097a3', onAccent: '#1a1204' }, paper: { accent: '#c97f00', warn: '#d13b1c', ink: '#16181c', muted: '#666d78', onAccent: '#ffffff' } };
 
 /** Spacing tool overlay: end labels A and B, the 0 marker, and each fixture's mark when there's room. */
-export function drawSpacingOverlay(ctx: CanvasRenderingContext2D, cam: Camera, doc: Doc, t: Truss, st: TrussSpacing, S: FmtSettings): void {
+export function drawSpacingOverlay(ctx: CanvasRenderingContext2D, cam: Camera, doc: Doc, t: Truss, st: TrussSpacing, S: FmtSettings, theme: 'dark' | 'paper' = 'dark'): void {
+  const { accent: ACCENT, warn: WARN, ink: INK, muted: MUTED, onAccent } = COLOURS[theme];
   const fixtures = [...doc.entities.values()].filter((e): e is Fixture => e.kind === 'fixture' && e.trussId === t.id);
   const rows = runMarks(t, fixtures, st, S);
   const draft = t.state === 'draft';
   const end = (p: { x: number; y: number }, label: string) => {
     const s = cam.toScreen(p);
     ctx.fillStyle = ACCENT; ctx.beginPath(); ctx.arc(s.x, s.y, 11, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#1a1204'; ctx.font = '700 13px "Barlow Condensed", system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, s.x, s.y + 0.5);
+    ctx.fillStyle = onAccent; ctx.font = '700 13px "Barlow Condensed", system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, s.x, s.y + 0.5);
   };
   const L = runLength(t);
   end(pointAt(t, 0).p, 'A'); end(pointAt(t, L).p, 'B');

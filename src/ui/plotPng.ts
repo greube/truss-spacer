@@ -9,6 +9,8 @@ import { formatSections } from './parse';
 export interface RunPlot {
   name: string; jobName: string; sections: number[]; corners: number[]; length: number; zero: number;
   rows: MarkRow[]; st: TrussSpacing; S: FmtSettings; showSec: boolean; provisional: boolean;
+  /** A warning that the sections and the drawing disagree, printed in red under the table. */
+  mismatch?: string;
 }
 
 export async function buildRunPng(r: RunPlot): Promise<Blob | null> {
@@ -16,7 +18,7 @@ export async function buildRunPng(r: RunPlot): Promise<Blob | null> {
   const C = { bg: '#ffffff', ink: '#16181c', muted: '#666d78', line: '#d8d6cf', band: '#f4f3ef', accent: '#c97f00', warn: '#d13b1c', truss: '#3a3f48' };
   const FD = "'Barlow Condensed','Arial Narrow',sans-serif", FB = 'Barlow,Arial,sans-serif', FM = "'JetBrains Mono',monospace";
   const f = (mm: number) => fmt(mm, false, r.S), mk = (row: MarkRow) => markLabel(row.mark, r.st, r.S);
-  const n = r.rows.length, rowH = 58, tableTop = 960, W = 2400, P = 150, H = tableTop + 70 + n * rowH + 110;
+  const n = r.rows.length, rowH = 58, tableTop = 960, W = 2400, P = 150, H = tableTop + 70 + n * rowH + 110 + (r.mismatch ? 50 : 0);
   const RL = r.length || 1, refName = r.st.ref === 'a' ? 'end A' : r.st.ref === 'b' ? 'end B' : 'centre';
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const c = cv.getContext('2d')!;
@@ -129,5 +131,6 @@ export async function buildRunPng(r: RunPlot): Promise<Blob | null> {
   });
   const rounding = (r.S.unit === 'ft' ? ROUNDS.ft : ROUNDS.metric).find(x => x[0] === r.S.round)?.[1] ?? `${r.S.round} mm`;
   T(`Rounded to ${r.S.round ? rounding : 'exact values'}.${r.showSec ? `  "In section" is measured from the ${r.st.ref === 'b' ? 'B' : 'A'} end of each section; sections numbered from ${r.st.ref === 'b' ? 'B' : 'A'}.` : ''}${r.provisional ? '  PROVISIONAL: the truss ends were estimated; confirm the truss before marking out.' : ''}`, P, th + 18 + n * rowH + 60, `400 26px ${FB}`, C.muted);
+  if (r.mismatch) T(r.mismatch, P, th + 18 + n * rowH + 110, `600 26px ${FB}`, C.warn);
   return await new Promise(res => cv.toBlob(res, 'image/png'));
 }

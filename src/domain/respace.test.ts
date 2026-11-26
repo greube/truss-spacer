@@ -3,7 +3,7 @@ import { respaceCommand } from './respace';
 import { History } from '../core/commands/history';
 import { newDoc, docToJSON } from '../core/model/doc';
 import { DEFAULT_SPACING } from '../core/model/types';
-import { IDENTITY, translate, yawOf } from '../core/geom/matrix';
+import { IDENTITY, translate, yawOf, withYaw } from '../core/geom/matrix';
 import type { Doc, Truss, Fixture, TrussSpacing } from '../core/model/types';
 
 function rig(legs: [number, number, number, number, number[]][], pts: [number, number][]): Doc {
@@ -21,11 +21,11 @@ test('edge mode on 3+3+2 puts 6 fixtures at 0.25 … 7.75 m, keeping their order
   expect(xs(d)).toEqual([250, 1750, 3250, 4750, 6250, 7750]);
   expect((d.entities.get('F0') as Fixture).matrix.o.z).toBe(5700);
 });
-test('equal gaps through a corner, turning to follow the leg', () => {
+test('equal gaps through a corner; a fixture staying on its leg keeps its rotation', () => {
   const d = rig([[0, 0, 4000, 0, [2000, 2000]], [4000, 0, 4000, 3000, [3000]]], [[500, 0], [3000, 0], [4000, 2000]]);
   const { command } = respaceCommand(d, 'T', st({ mode: 'equal' })); new History(d).exec(command!);
   const f2 = d.entities.get('F2') as Fixture;
-  expect(f2.matrix.o.x).toBeCloseTo(4000); expect(f2.matrix.o.y).toBeCloseTo(1250); expect(yawOf(f2.matrix)).toBeCloseTo(Math.PI / 2);
+  expect(f2.matrix.o.x).toBeCloseTo(4000); expect(f2.matrix.o.y).toBeCloseTo(1250); expect(yawOf(f2.matrix)).toBeCloseTo(0);
   expect((d.entities.get('F1') as Fixture).matrix.o.x).toBeCloseTo(3500);
 });
 test('one fixture is centred', () => {
@@ -69,4 +69,25 @@ test('confirming a truss with corners keeps its shape and fills empty sections',
 test('the re-space preview reports the gap it will give', () => {
   const d = rig([[0, 0, 8000, 0, [3000, 3000, 2000]]], [[400, 0], [1200, 0], [3300, 0], [5000, 0], [6000, 0], [7600, 0]]);
   expect(respacePlan(d, 'T', st({ mode: 'equal' }))).toMatchObject({ count: 6, gap: 8000 / 7, warning: '' });
+});
+
+test('re-space uses the drawn length, the same one the marks use (review fix)', () => {
+  const d = rig([[0, 0, 8550, 0, [8000]]], [[400, 0], [3000, 0], [8000, 0]]);
+  const { command } = respaceCommand(d, 'T', st({ mode: 'edge', inset: 250 })); new History(d).exec(command!);
+  expect(xs(d)).toEqual([250, 4275, 8300]);
+});
+test('re-space keeps each fixture\'s rotation relative to its leg (review fix)', () => {
+  const d = rig([[0, 0, 4000, 0, [2000, 2000]], [4000, 0, 4000, 3000, [3000]]], [[500, 0], [3000, 0], [3500, 0]]);
+  const f0 = d.entities.get('F0') as Fixture, f2 = d.entities.get('F2') as Fixture;
+  f0.matrix = withYaw(f0.matrix, Math.PI); f2.matrix = withYaw(f2.matrix, Math.PI);
+  const { command } = respaceCommand(d, 'T', st({ mode: 'equal' })); new History(d).exec(command!);
+  expect(yawOf((d.entities.get('F0') as Fixture).matrix)).toBeCloseTo(Math.PI); // straight part: unchanged
+  const y2 = yawOf((d.entities.get('F2') as Fixture).matrix); // moved round the corner: turned 90°
+  expect(Math.cos(y2)).toBeCloseTo(0); expect(Math.sin(y2)).toBeCloseTo(-1);
+});
+test('the plan says how many fixtures off the line stay put, and including them moves them', async () => {
+  const { respacePlan } = await import('./respace');
+  const d = rig([[0, 0, 8000, 0, [8000]]], [[400, 0], [3000, 420], [5000, 0], [7600, 0]]);
+  expect(respacePlan(d, 'T', st())).toMatchObject({ count: 3, offLine: 1 });
+  expect(respacePlan(d, 'T', st(), { includeOffLine: true })).toMatchObject({ count: 4, offLine: 1 });
 });

@@ -7,11 +7,11 @@ import { setProps } from '../core/commands/ops';
 import { fmt } from '../domain/spacing';
 import { runMarks, runSections, runLength, markLabel, alongRun } from '../domain/runMarks';
 import { respaceCommand, respacePlan, confirmCommand } from '../domain/respace';
-import { spacingText } from './spacingText';
+import { spacingText, mismatchNote } from './spacingText';
 import { parseLengthInput, formatLength, parseSectionsInput, formatSections } from './parse';
 import { suggestSections } from '../tools/addTruss';
 
-export interface SpacingState { showSec: boolean; done: Set<string>; sel: string | null; key: string }
+export interface SpacingState { showSec: boolean; done: Set<string>; sel: string | null; key: string; /** Re-space also moves fixtures well off the truss line. */ incOff?: boolean }
 export interface SpacingHooks { toast(msg: string, warn?: boolean): void; exportImage(trussId: string, rows: ReturnType<typeof runMarks>, st: TrussSpacing, showSec: boolean): void }
 
 const seg = (opts: [string, string][], value: string, on: (v: string) => void) =>
@@ -44,6 +44,8 @@ export function renderSpacingPanel(el: HTMLElement, app: AppCtx, trussId: string
     h('b', { text: t.name, style: { font: '600 20px var(--f-display)', textTransform: 'uppercase' } }),
     h('span', { class: 'tag' + (draft ? ' draft' : ''), text: draft ? 'Draft' : t.state === 'imported' ? 'From MVR' : 'Confirmed' }),
     h('span', { class: 'note', text: `${f(L)}${t.legs.length > 1 ? ` · ${t.legs.length} legs` : ''} · ${fixtures.length} fixture${fixtures.length === 1 ? '' : 's'}` })));
+  const mismatch = mismatchNote(t, S);
+  if (mismatch) body.append(h('p', { class: 'note warn', text: mismatch + ' Fix the sections in Object Info (select the truss) or re-confirm it.' }));
   if (draft) {
     const first = fixtures.length ? Math.min(...fixtures.map(x => alongRun(t, { x: x.matrix.o.x, y: x.matrix.o.y }).s)) : 0;
     // a real truss is at least the fixture spread: suggest stock pieces for the length rounded up to a whole metre
@@ -95,7 +97,7 @@ export function renderSpacingPanel(el: HTMLElement, app: AppCtx, trussId: string
     body.append(h('p', { class: 'note', text: draft ? 'Provisional marks (dimmed): confirm the truss first.' : 'Tap a row to find it on the plot; tap again to tick it off.' }), h('div', { style: { overflowX: 'auto' } }, table),
       h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } },
         h('button', { class: 'btn', type: 'button', text: 'Copy list', onclick: async (e: Event) => {
-          const txt = spacingText({ name: t.name, sections: secs, length: L, rows, st, S, showSec: state.showSec, provisional: draft });
+          const txt = spacingText({ name: t.name, sections: secs, length: L, rows, st, S, showSec: state.showSec, provisional: draft, mismatch });
           const b = e.target as HTMLButtonElement;
           try { await navigator.clipboard.writeText(txt); b.textContent = 'Copied'; } catch { b.textContent = 'Copy failed'; }
           setTimeout(() => { b.textContent = 'Copy list'; }, 1600);
@@ -105,8 +107,17 @@ export function renderSpacingPanel(el: HTMLElement, app: AppCtx, trussId: string
 
   // re-space evenly (the backup)
   const preview = h('p', { class: 'note' });
-  const showPlan = () => { const p = respacePlan(app.doc, t.id, st); preview.textContent = p.count ? `${p.count} fixture${p.count > 1 ? 's' : ''}${p.gap != null ? `, gap ${f(p.gap)}` : ''}.${p.warning ? ' ' + p.warning : ''}` : p.warning; preview.className = p.warning ? 'note warn' : 'note'; };
+  const inc = !!state.incOff;
+  const p0 = respacePlan(app.doc, t.id, st, { includeOffLine: inc });
+  const showPlan = () => {
+    const p = respacePlan(app.doc, t.id, st, { includeOffLine: inc });
+    const stay = p.offLine && !inc ? ` ${p.offLine} off the line stay${p.offLine === 1 ? 's' : ''} put.` : '';
+    preview.textContent = p.count ? `${p.count} fixture${p.count > 1 ? 's' : ''}${p.gap != null ? `, gap ${f(p.gap)}` : ''}.${stay}${p.warning ? ' ' + p.warning : ''}` : p.warning;
+    preview.className = p.warning ? 'note warn' : 'note';
+  };
   showPlan();
+  const incBox = p0.offLine ? h('label', { class: 'item' }, h('input', { type: 'checkbox', checked: inc, onchange: (e: Event) => { state.incOff = (e.target as HTMLInputElement).checked; rerender(); } }),
+    h('b', { text: `Include ${p0.offLine} off the line` }), h('span')) : null;
   const det = h('details', { style: { borderTop: '1px solid var(--line)', paddingTop: '8px' } },
     h('summary', { text: 'Re-space evenly (moves the fixtures)', style: { cursor: 'pointer', font: '600 13px var(--f-body)', letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--muted)', padding: '6px 0' } }),
     h('div', { style: { display: 'grid', gap: '8px' } },
@@ -115,9 +126,9 @@ export function renderSpacingPanel(el: HTMLElement, app: AppCtx, trussId: string
       st.mode === 'edge' && st.diffEnds ? field(`End B gap (${U})`, inputBox(formatLength(st.insetB, unit), v => { const n = parseLengthInput(v, unit); if (n == null || n < 0) return false; setSt({ insetB: n }); })) : null,
       st.mode === 'edge' ? h('label', { class: 'item' }, h('input', { type: 'checkbox', checked: st.diffEnds, onchange: (e: Event) => setSt({ diffEnds: (e.target as HTMLInputElement).checked, insetB: st.inset }) }), h('b', { text: 'Different gap each end' }), h('span')) : null,
       st.mode === 'fixed' ? field(`Gap (${U})`, inputBox(formatLength(st.gap, unit), v => { const n = parseLengthInput(v, unit); if (n == null || n <= 0) return false; setSt({ gap: n }); })) : null,
-      preview,
+      incBox, preview,
       h('button', { class: 'btn primary', type: 'button', text: 'Apply re-space', onclick: () => {
-        const r = respaceCommand(app.doc, t.id, st);
+        const r = respaceCommand(app.doc, t.id, st, { includeOffLine: inc });
         if (!r.command) { hooks.toast(r.warning || "Couldn't re-space.", true); return; }
         app.history.exec(r.command); hooks.toast(r.warning ? `Re-spaced. ${r.warning}` : 'Re-spaced. Undo puts them back where the LD had them.', !!r.warning);
       } })));

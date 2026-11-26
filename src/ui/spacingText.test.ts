@@ -25,3 +25,14 @@ test('centre with an offset, and provisional drafts', () => {
   expect(t).toContain('Marks from the centre (truss 0.500 m towards B), − towards A, + towards B:');
   expect(t).toContain('1. +0.250 m');
 });
+test('a run whose sections disagree with the drawing says so (review fix)', async () => {
+  const { mismatchNote } = await import('./spacingText');
+  const legs = [{ a: { x: 0, y: 0, z: 0 }, b: { x: 3700, y: 0, z: 0 }, sections: [3000, 1000] }, { a: { x: 3700, y: 0, z: 0 }, b: { x: 3700, y: 3000, z: 0 }, sections: [3000] }];
+  const note = mismatchNote({ legs } as any, S);
+  expect(note).toBe('Check the truss: leg 1 sections add up to 4.000 m but it is drawn 3.700 m. Marks use the drawing.');
+  expect(mismatchNote({ legs: [legs[1]] } as any, S)).toBe('');
+  const one = mismatchNote({ legs: [legs[0]] } as any, S);
+  expect(one).toBe('Check the truss: its sections add up to 4.000 m but it is drawn 3.700 m. Marks use the drawing.');
+  const t = spacingText({ name: 'LX1', sections: [3000, 1000, 3000], length: 6700, rows: [], st: DEFAULT_SPACING, S, showSec: false, provisional: false, mismatch: note });
+  expect(t.split('\n')[0]).toBe(note);
+});

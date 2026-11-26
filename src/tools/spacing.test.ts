@@ -27,3 +27,11 @@ test('the overlay draws without throwing, for confirmed and draft trusses', () =
   for (const state of ['confirmed', 'draft'] as const) drawSpacingOverlay(ctx, app.camera, app.doc, { ...t, state }, { ...DEFAULT_SPACING, ref: 'centre' }, { unit: 'm', round: 5 });
   expect(calls).toContain('fillText');
 });
+test('in Paper mode the overlay uses dark ink, not the dark theme\'s light ink (review fix)', () => {
+  const app = makeApp(); const fills: string[] = [];
+  const ctx: any = new Proxy({}, { get: (o: any, k) => (k in o ? o[k] : k === 'measureText' ? () => ({ width: 30 }) : (..._a: any[]) => { if (k === 'fillText') fills.push(o.fillStyle); }), set: (o: any, k, v) => { o[k] = v; return true; } });
+  app.camera.fit({ min: { x: -500, y: -1000 }, max: { x: 8500, y: 1000 } });
+  drawSpacingOverlay(ctx, app.camera, app.doc, app.doc.entities.get('T') as Truss, { ...DEFAULT_SPACING, joinWarn: 0 }, { unit: 'm', round: 5 }, 'paper');
+  expect(fills).not.toContain('#e9e6df');
+  expect(fills).toContain('#16181c');
+});

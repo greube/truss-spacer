@@ -21,6 +21,8 @@ export interface AppCtx {
   previewActive: boolean;
   /** A tool's colour for each fixture on the plot (the Power tool's circuits); null draws the normal colours. */
   fixtureColour?: ((f: Fixture) => string | null) | null;
+  /** The plot's colour scheme, for tool overlays. */
+  theme?: 'dark' | 'paper';
   /** Cancels the active tool's live preview, if any. */
   cancelPreview?(): void;
 }
