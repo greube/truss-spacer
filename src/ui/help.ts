@@ -15,7 +15,8 @@ export function renderHelp(el: HTMLElement): void {
     h('dl', {}, ...pair('Spacing', 'Tap a truss: tape marks for where the LD put each fixture, from end A, the centre or end B. Re-space evenly as a backup.'),
       ...pair('Power', 'Fixtures coloured by circuit (neighbours only, 80% of 2400 W by default, 6 per Socapex, one Socapex run per truss). Copy power or export the sheet.'),
       ...pair('DMX', 'A daisy-chain per truss from the end you choose: each cable is the gap + 2 × truss depth + 0.5 m, rounded up to stock lengths. Copy cables for the pull list.'),
-      ...pair('Export MVR', 'Job menu. Sends the rig back to the LD or the console; only what you changed is changed. Draft trusses are left out.')),
+      ...pair('Export MVR', 'Job menu. Sends the rig back to the LD or the console; only what you changed is changed. Draft trusses are left out.'),
+      ...pair('Export PDF pack', 'Job menu. The plot at scale with a title block, then every marks list, the power list and the DMX pull list, ready to print or send.')),
     h('p', { class: 'note', text: 'On a phone, Rotate and Measure are under More.' }),
     h('p', { class: 'note', text: 'Snapping finds truss ends, section joins, fixture centres and midpoints, and 15° angles while drawing. Draft trusses (dashed) were worked out from hanging positions: check their length and sections, then Confirm truss.' }),
   ));
