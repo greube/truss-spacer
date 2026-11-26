@@ -1,0 +1,18 @@
+{
+  "name": "truss-cad",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "CAD-style lighting plot tool: import an LD's MVR, then spacing, power and cabling tools.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run",
+    "e2e": "node e2e/m1.mjs"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "vite": "8.4.0",
+    "vitest": "5.1.2"
+  }
+}
