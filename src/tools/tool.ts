@@ -1,4 +1,4 @@
-import type { Doc, Entity, Id } from '../core/model/types';
+import type { Doc, Entity, Fixture, Id } from '../core/model/types';
 import type { History } from '../core/commands/history';
 import type { GridIndex } from '../core/index/grid';
 import type { Camera } from '../view/camera';
@@ -19,6 +19,8 @@ export interface AppCtx {
   notify(msg: string): void;
   /** True while a tool has a live preview applied to the doc (a drag in progress). Saving and shortcuts wait. */
   previewActive: boolean;
+  /** A tool's colour for each fixture on the plot (the Power tool's circuits); null draws the normal colours. */
+  fixtureColour?: ((f: Fixture) => string | null) | null;
   /** Cancels the active tool's live preview, if any. */
   cancelPreview?(): void;
 }

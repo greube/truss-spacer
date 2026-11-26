@@ -1,6 +1,6 @@
 import { h, clear } from './dom';
 
-export interface ToolButton { id: string; icon: string; label: string }
+export interface ToolButton { id: string; icon: string; label: string; /** Laptop palette only; on a phone it lives in More. */ lapOnly?: boolean }
 export interface Shell {
   root: HTMLElement; stage: HTMLElement; canvas: HTMLCanvasElement;
   jobBtn: HTMLButtonElement; jobName: HTMLElement; undoBtn: HTMLButtonElement; redoBtn: HTMLButtonElement;
@@ -32,7 +32,7 @@ export function buildShell(root: HTMLElement, tools: ToolButton[], phoneExtra: T
 
   const btn = (t: ToolButton, cls = 'ib') => h('button', { class: cls, type: 'button', 'data-tool': t.id, 'aria-pressed': 'false', title: t.label, onclick: () => (t.id === 'more' ? onMore() : onTool(t.id)) }, h('i', { text: t.icon }), t.label);
   const palette = h('nav', { class: 'palette', 'aria-label': 'Tools' }, ...tools.map(t => btn(t)));
-  const toolbar = h('nav', { class: 'tools', 'aria-label': 'Tools' }, ...tools.map(t => btn(t)), btn(phoneExtra));
+  const toolbar = h('nav', { class: 'tools', 'aria-label': 'Tools' }, ...tools.filter(t => !t.lapOnly).map(t => btn(t)), btn(phoneExtra));
   const section = (title: string) => { const body = h('div'); return { el: h('section', { class: 'sec' }, h('h3', { text: title }), body), body }; };
   const info = section('Object info'), layers = section('Layers & classes'), positions = section('Hanging positions'), spacing = section('Spacing');
   spacing.el.hidden = true; spacing.el.classList.add('spacing-sec');

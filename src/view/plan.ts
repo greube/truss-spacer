@@ -8,6 +8,8 @@ import { drawSymbol, footprint } from './symbols';
 export interface ViewState {
   doc: Doc; camera: Camera; index: GridIndex; selection: Set<Id>; hover: Id | null;
   preview: ((ctx: CanvasRenderingContext2D, cam: Camera) => void) | null; theme: 'dark' | 'paper';
+  /** Per-fixture colour from the active tool (power circuits), used when the fixture isn't selected. */
+  fixtureColour?: ((f: Fixture) => string | null) | null;
 }
 
 const DOT_BELOW = 6, LABELS_FROM = 28; // px
@@ -119,7 +121,8 @@ export class PlanRenderer {
     const p = cam.toScreen({ x: f.matrix.o.x, y: f.matrix.o.y });
     const size = footprint(cat) * cam.scale;
     const sel = s.selection.has(f.id) || s.hover === f.id;
-    const col = sel ? C.accent : type && type.w == null ? C.warn : C.ink;
+    const tint = sel ? null : s.fixtureColour?.(f) ?? null;
+    const col = sel ? C.accent : tint ?? (type && type.w == null ? C.warn : C.ink);
     this.stats.fixtures++;
     if (size < DOT_BELOW) { ctx.fillStyle = col; ctx.fillRect(p.x - 1.5, p.y - 1.5, 3, 3); return; }
     ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(-yawOf(f.matrix));

@@ -13,6 +13,7 @@ import { AddTrussTool } from './tools/addTruss';
 import { AddFixtureTool } from './tools/addFixture';
 import { MeasureTool } from './tools/measure';
 import { SpacingTool } from './tools/spacing';
+import { PowerTool } from './tools/power';
 import { handleKey, undo, redo, zoomToFit, pruneSelection } from './app/actions';
 import { setSettings } from './core/commands/ops';
 import * as ops from './core/commands/ops';
@@ -46,12 +47,13 @@ const camera = new Camera();
 let hover: string | null = null;
 
 const spacingTool = new SpacingTool();
-const tools: Record<string, Tool> = { select: new SelectTool(), rotate: new RotateTool(), addTruss: new AddTrussTool(), addFixture: new AddFixtureTool(), measure: new MeasureTool(), spacing: spacingTool };
+const powerTool = new PowerTool();
+const tools: Record<string, Tool> = { select: new SelectTool(), rotate: new RotateTool(), addTruss: new AddTrussTool(), addFixture: new AddFixtureTool(), measure: new MeasureTool(), spacing: spacingTool, power: powerTool };
 let active: Tool = tools.select;
 
 const shell = buildShell(document.getElementById('app')!, [
   { id: 'select', icon: '↖', label: 'Select' }, { id: 'rotate', icon: '⟲', label: 'Rotate' }, { id: 'addTruss', icon: '▭', label: 'Truss' },
-  { id: 'addFixture', icon: '◉', label: 'Fixture' }, { id: 'spacing', icon: '⇔', label: 'Spacing' }, { id: 'measure', icon: '⇹', label: 'Measure' },
+  { id: 'addFixture', icon: '◉', label: 'Fixture' }, { id: 'spacing', icon: '⇔', label: 'Spacing' }, { id: 'power', icon: '⚡', label: 'Power' }, { id: 'measure', icon: '⇹', label: 'Measure', lapOnly: true },
 ], { id: 'more', icon: '⋯', label: 'More' }, id => app.setTool(id), () => openMore());
 
 export const hooks = {
@@ -77,7 +79,7 @@ const app: AppCtx = {
   notify(msg) { shell.status.msg.textContent = msg; const s = shell.phoneMsg.firstElementChild as HTMLElement; s.textContent = msg; shell.phoneMsg.hidden = !msg; },
 };
 
-const renderer = new PlanRenderer(shell.canvas, () => ({ doc: app.doc, camera, index, selection: app.selection, hover, preview: app.preview, theme }));
+const renderer = new PlanRenderer(shell.canvas, () => ({ doc: app.doc, camera, index, selection: app.selection, hover, preview: app.preview, theme, fixtureColour: app.fixtureColour }));
 let frame = 0;
 let lastSel = '';
 function scheduleDraw() {
@@ -146,7 +148,7 @@ function renderPanels() {
   shell.unitSel.value = app.doc.settings.unit;
 }
 
-history.onChange(() => { index.rebuild(app.doc); pruneSelection(app); lastSel = '\0'; renderPanels(); scheduleDraw(); hooks.afterChange(); });
+history.onChange(() => { powerTool.invalidate(); index.rebuild(app.doc); pruneSelection(app); lastSel = '\0'; renderPanels(); scheduleDraw(); hooks.afterChange(); });
 
 // Gestures on the plan go to the active tool; pinch and wheel always zoom
 new Gestures(shell.canvas, {
@@ -201,7 +203,7 @@ function openMore() {
     const box = document.createElement('div'); box.className = 'body';
     box.append(b('Hanging positions', () => shell.openSheet('Hanging positions', el2 => renderPositions(el2, app))),
       b('Layers & classes', () => shell.openSheet('Layers & classes', el2 => renderLayers(el2, app))),
-      b('Zoom to fit', () => zoomToFit(app)), b(theme === 'paper' ? 'Dark mode' : 'Paper mode (daylight)', () => shell.themeBtn.click()), b('Help', openHelp));
+      b('Measure', () => app.setTool('measure')), b('Zoom to fit', () => zoomToFit(app)), b(theme === 'paper' ? 'Dark mode' : 'Paper mode (daylight)', () => shell.themeBtn.click()), b('Help', openHelp));
     el.append(box);
   });
 }
@@ -214,7 +216,7 @@ window.addEventListener('orientationchange', () => setTimeout(resize, 150));
 /** Shows a document (a newly opened or imported job): fresh undo history, zoomed to fit. */
 function setDoc(d: Doc, name: string) {
   active.onDragCancel?.();
-  app.doc = d; history.reset(d); app.selection.clear(); index.rebuild(d);
+  app.doc = d; history.reset(d); app.selection.clear(); index.rebuild(d); powerTool.invalidate();
   shell.jobName.textContent = name; lastSel = '\0';
   renderPanels(); renderer.resize(); zoomToFit(app);
 }
@@ -244,4 +246,4 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') navigator.serviceWorker.getRegistration().then(r => r?.update()).catch(() => {}); });
 }
 // For automated tests and debugging
-(window as any).__cad = { app, jobs, renderer, shell, ops, spacingTool, importBuffer: (buf: ArrayBuffer, name = 'Imported rig.mvr') => jobs.importFile(new Blob([buf]), name) };
+(window as any).__cad = { app, jobs, renderer, shell, ops, spacingTool, powerTool, importBuffer: (buf: ArrayBuffer, name = 'Imported rig.mvr') => jobs.importFile(new Blob([buf]), name) };
