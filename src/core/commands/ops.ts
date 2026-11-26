@@ -109,3 +109,20 @@ export function setFixtureType(ids: Id[], typeKey: string, type?: FixtureType): 
 }
 
 export type { Truss };
+
+/** Adds a layer (used when drawing into a job that has none). */
+export function addLayer(layer: { id: Id; name: string; visible: boolean }): Command {
+  return {
+    label: 'Add layer',
+    do(d) { if (!d.layers.some(l => l.id === layer.id)) d.layers.push({ ...layer }); },
+    undo(d) { const i = d.layers.findIndex(l => l.id === layer.id); if (i >= 0) d.layers.splice(i, 1); },
+  };
+}
+
+/** The layer new objects go on: the given one if it exists, else the first, else a new "Plot" layer (added through History). */
+export function layerForNew(history: { exec(c: Command): void; doc: Doc }, preferred?: Id | null): Id {
+  const d = history.doc;
+  if (preferred && d.layers.some(l => l.id === preferred)) return preferred;
+  if (d.layers.length) return d.layers[0].id;
+  const id = newId(); history.exec(addLayer({ id, name: 'Plot', visible: true })); return id;
+}
