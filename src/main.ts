@@ -33,7 +33,8 @@ import { renderSpacingPanel } from './ui/spacingPanel';
 import { mismatchNote } from './ui/spacingText';
 import { renderPowerPanel } from './ui/powerPanel';
 import { buildPowerPng } from './ui/powerPng';
-import { showImageSheet, slug } from './ui/imageSheet';
+import { showImageSheet, showFileSheet, slug } from './ui/imageSheet';
+import { exportMvr } from './io/mvr/export';
 import type { SpacingState } from './ui/spacingPanel';
 import { buildRunPng } from './ui/plotPng';
 import { runSections, runLength, zeroAlong } from './domain/runMarks';
@@ -257,7 +258,18 @@ function openReview() { reviewSheet = shell.openSheet('Fixture types', el => ren
 function openPicker(ids: string[]) {
   const s = shell.openSheet('Choose fixture type', el => renderPicker(el, app, ids, () => { s.close(); reviewSheet?.refresh(); }));
 }
-const jobs = createJobs({ app, shell, setDoc, openReview });
+const jobs = createJobs({ app, shell, setDoc, openReview, exportMvr: () => { void exportJobMvr(); } });
+async function exportJobMvr() {
+  if (app.previewActive) return;
+  try {
+    const orig = jobs.current.original ? new Uint8Array(await jobs.current.original.arrayBuffer()) : null;
+    const r = await exportMvr(app.doc, orig, { parseXml: s => new DOMParser().parseFromString(s, 'application/xml'), serialize: d => new XMLSerializer().serializeToString(d) });
+    const drafts = [...app.doc.entities.values()].filter(e => e.kind === 'truss' && e.state === 'draft').length;
+    const notes = [...(drafts ? [`${drafts} draft truss${drafts === 1 ? ' is' : 'es are'} left out: confirm ${drafts === 1 ? 'it' : 'them'} to include ${drafts === 1 ? 'it' : 'them'}.`] : []), ...r.warnings];
+    const name = jobs.current.name || 'Job';
+    showFileSheet(shell, new Blob([r.bytes as BlobPart], { type: 'application/octet-stream' }), { heading: 'Export MVR', name: `${name.replace(/[\\/:*?"<>|]+/g, '-')}.mvr`, title: name, type: 'application/octet-stream', notes });
+  } catch (e) { console.warn(e); shell.toast("Couldn't export the MVR.", true); }
+}
 shell.jobBtn.onclick = () => jobs.openSheet();
 
 app.setTool('select');
