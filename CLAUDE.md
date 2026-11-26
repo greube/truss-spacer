@@ -19,7 +19,7 @@ The owner is a lighting and production tech in Australia (Melbourne/Sydney) who 
   - Set `MVR_SAMPLE=/path/to/file.mvr` to also run the real-file tests.
   - The owner's sample "Ford Uncovered" is a **client file: never commit, publish or serve it**. Load it in browser tests through Playwright `page.route` from Node memory.
 - `npm run build`: `tsc --noEmit`, then the Vite build to `dist/`, then `scripts/build-sw.mjs` writes `dist/sw.js` (the offline cache list). `BUILD_ID` env stamps the cache name.
-- Browser checks use the preinstalled Playwright via `createRequire(import.meta.url)('playwright')` in `.mjs` scripts. `window.__cad` exposes `{app, jobs, renderer, shell, importBuffer}` for tests.
+- Browser checks use the preinstalled Playwright via `createRequire(import.meta.url)('playwright')` in `.mjs` scripts. `window.__cad` exposes `{app, jobs, renderer, shell, ops, spacingTool, powerTool, cablingTool, importBuffer}` for tests. `npm run e2e` runs `e2e/m1.mjs`…`m5.mjs` (needs `MVR_SAMPLE` and a build).
 
 ## Deploy
 
@@ -37,13 +37,13 @@ The direction of dependency goes top to bottom. The core has no DOM.
 | `src/core/model` | `types.ts`: `Doc`, `Truss` (legs and sections, `draft` / `confirmed` / `imported`), `Fixture`, `RefObject`, `FixtureType`, `Layer`, `MvrClass`, `HangingPosition`. `doc.ts`: `newDoc`, `docToJSON` / `docFromJSON` (clean and validate), `entityBounds` |
 | `src/core/commands` | `History` (undo/redo, `begin`/`end` groups). `ops.ts` holds every edit as a `Command`: `addEntities`, `removeEntities`, `setProps`, `transform` (fixtures follow their truss), `duplicate`, `setVisibility`, `setFixtureType`, `updateType`, `setSettings`, `addLayer` / `layerForNew`. **Every doc change goes through `History.exec`.** |
 | `src/core/index`, `snap.ts` | `GridIndex` (query, hit) and CAD snapping: truss ends, section joins, fixture centres, midpoints, 15° angles, grid |
-| `src/io` | `zip.ts` (read/write with Compression Streams), `mvr/glb.ts` (bounding boxes from glTF accessors), `mvr/parse.ts` + `import.ts` (MVR → Doc, keeping the original bytes and XML), `mvr/infer.ts` (draft trusses from hanging positions; `inferCommand` is undoable) |
-| `src/domain` | `spacing.ts` (v1 maths, golden-tested against 260 v1 cases), `fixtures/` (wattage DB `data.json`, built by `tools/build-fixtures.py` from OFL plus `data/touring-fixtures.json`; `match.ts`, `category.ts`, `enrich.ts`) |
+| `src/io` | `zip.ts` (read/write with Compression Streams), `mvr/export.ts` (round-trip export: diffs the Doc against a re-parse of the original and edits only changed nodes), `mvr/glb.ts` (bounding boxes from glTF accessors), `mvr/parse.ts` + `import.ts` (MVR → Doc, keeping the original bytes and XML), `mvr/infer.ts` (draft trusses from hanging positions; `inferCommand` is undoable) |
+| `src/domain` | `spacing.ts` (v1 maths, golden-tested against 260 v1 cases), `runMarks.ts` + `respace.ts` (marks along a run, per-leg sections, re-space), `power.ts` (v2 circuit maths) + `powerRig.ts` (runs: trusses, then positions/loose fixtures as nearest-first runs split at big gaps), `cabling.ts` (DMX chains and jumpers), `fixtures/` (wattage DB `data.json`, built by `tools/build-fixtures.py` from OFL plus `data/touring-fixtures.json`; `match.ts`, `category.ts`, `enrich.ts`) |
 | `src/view` | `camera.ts`, `plan.ts` (Canvas 2D plan renderer with level of detail, dark/paper palettes), `symbols.ts`, `input.ts` (`Gestures`: tap, drag, pinch, long press, two-finger tap, wheel) |
-| `src/tools` | `Tool` interface plus `AppCtx`. `select` (tap, box select, live move with snapping, touch pan), `rotate`, `addTruss` (`suggestSections`), `addFixture`, `measure` |
+| `src/tools` | `Tool` interface plus `AppCtx`. `select` (tap, box select, live move with snapping, touch pan), `rotate`, `addTruss` (`suggestSections`), `addFixture`, `measure`, `spacing`, `power`, `cabling` (overlays in `src/view/*Overlay.ts`) |
 | `src/app/actions.ts` | delete, duplicate, nudge, undo, redo, zoom to fit, `handleKey` |
 | `src/store/jobs.ts` | IndexedDB jobs (`trussCad` database); never throws |
-| `src/ui` | `shell` (layout: laptop palette and side column at ≥ 900 px, phone bottom tool bar and sheets below), `objectInfo`, `layers`, `positions`, `review` (fixture types plus picker), `jobs` (job menu, autosave, import flow), `help`, `parse` (input parsing), `theme.css` |
+| `src/ui` | `shell` (layout: laptop palette and side column at ≥ 900 px, phone bottom tool bar and sheets below), `objectInfo`, `layers`, `positions`, `review` (fixture types plus picker), `jobs` (job menu, autosave, import flow, Export MVR), `spacingPanel` / `powerPanel` / `cablingPanel` (tool panels: side column on a laptop, non-modal sheet on a phone), `*Text.ts` (copy text), `plotPng` / `powerPng` / `imageSheet`, `help`, `parse` (input parsing), `theme.css` |
 | `src/main.ts` | Wires everything together |
 
 ## Key decisions (see the spec and the plans' ledgers for more)
@@ -55,7 +55,9 @@ The direction of dependency goes top to bottom. The core has no DOM.
   - Only confident database matches are applied automatically. Everything else goes to the **Fixture types** review.
   - Custom@ types are named after the fixture.
   - Unit number 0 from Vectorworks means none.
-- **Power, spacing and cabling rules** carry over from v2 (in the spec, §10).
+- **Power, spacing and cabling rules** carry over from v2 (in the spec, §10). Power and cabling are computed from the doc, never stored; only settings (`doc.settings.power`, `Truss.spacing`, `Truss.dmxFrom`) are saved.
+- **Spacing positions come from the drawing**; where sections and drawing disagree a warning shows in the panel, copy text and PNG.
+- **Export** never writes drafts, and rewrites a node's Matrix only when its local matrix changed.
 
 ## Conventions
 
