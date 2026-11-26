@@ -34,8 +34,14 @@ export function drawPlotPage(pdf: Pdf, doc: Doc, o: { jobName: string; source: s
     const v = vals.slice().sort((a, b) => a - b), lo = v[Math.floor(0.05 * (v.length - 1))], hi = v[Math.ceil(0.95 * (v.length - 1))], r = Math.max(hi - lo, 10000);
     return [lo - r, hi + r];
   };
+  // Only when the whole rig won't fit at 1:250 or better: drop a few loose objects (never trusses or what hangs on
+  // them) far outside the 5th–95th percentile window, so a real front-of-house truss or second room stays on
+  const boundsOf = (es: Entity[]) => { let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity; for (const e of es) { const bb = entityBounds(doc, e); a = Math.min(a, bb.min.x); b = Math.min(b, bb.min.y); c = Math.max(c, bb.max.x); d = Math.max(d, bb.max.y); } return { w: c - a + 4000, h: d - b + 4000 }; };
+  const whole = allRig.length ? pickScale(boundsOf(allRig), area) : { denom: 1, fits: true };
   const cs = allRig.map(centre), [x0, x1] = allRig.length ? window(cs.map(c => c.x)) : [0, 0], [y0, y1] = allRig.length ? window(cs.map(c => c.y)) : [0, 0];
-  const rigEnts = allRig.filter((_, i) => cs[i].x >= x0 && cs[i].x <= x1 && cs[i].y >= y0 && cs[i].y <= y1);
+  const anchored = (e: Entity) => e.kind === 'truss' || (e.kind === 'fixture' && !!e.trussId && !!doc.entities.get(e.trussId));
+  const filter = !(whole.fits && whole.denom <= 250);
+  const rigEnts = allRig.filter((e, i) => !filter || anchored(e) || (cs[i].x >= x0 && cs[i].x <= x1 && cs[i].y >= y0 && cs[i].y <= y1));
   const stranded = allRig.length - rigEnts.length, sized = rigEnts.length ? rigEnts : ents;
   for (const e of sized) { const b = entityBounds(doc, e); minX = Math.min(minX, b.min.x); minY = Math.min(minY, b.min.y); maxX = Math.max(maxX, b.max.x); maxY = Math.max(maxY, b.max.y); }
   if (!sized.length) { minX = minY = 0; maxX = maxY = 1000; }
@@ -95,8 +101,8 @@ export function drawPlotPage(pdf: Pdf, doc: Doc, o: { jobName: string; source: s
   let y = MARGIN + 6;
   const line = (t: string, size: number, font: 'H' | 'HB' = 'H', col = INK) => { pdf.fill(col).text(tx, y, t, size, { font }); y += size * 0.45 + 1.2; };
   line('TRUSS CAD', 14, 'HB');
-  line(o.jobName || 'Job', 10, 'HB');
-  if (o.source) line(o.source, 7, 'H', MUTED);
+  line(pdf.fit(o.jobName || 'Job', tw, 10, 'HB'), 10, 'HB');
+  if (o.source) line(pdf.fit(o.source, tw, 7), 7, 'H', MUTED);
   line(new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }), 7, 'H', MUTED);
   y += 2;
   line(fits ? `Scale 1:${denom}` : 'Not to scale', 9, 'HB');
@@ -109,9 +115,9 @@ export function drawPlotPage(pdf: Pdf, doc: Doc, o: { jobName: string; source: s
   line(`Sheet ${o.sheet} of ${o.sheets}`, 8);
   y += 3; line('Fixtures', 8, 'HB');
   const keys = [...counts].sort((a, b) => b[1] - a[1]);
-  for (const [name, n] of keys.slice(0, 24)) { const t = `${name} × ${n}`; line(pdf.textWidth(t, 6.5) > tw ? t.slice(0, 40) + '…' : t, 6.5); }
+  for (const [name, n] of keys.slice(0, 24)) line(pdf.fit(name, tw, 6.5, 'H', ` × ${n}`), 6.5);
   if (keys.length > 24) line(`+${keys.length - 24} more types`, 6.5, 'H', MUTED);
-  if (stranded) { y += 2; line(`${stranded} object${stranded === 1 ? '' : 's'} far from the rig ${stranded === 1 ? 'is' : 'are'} off this plot.`, 6, 'H', DRAFT); }
+  if (stranded) { y += 2; for (const l of pdf.wrapTo(`${stranded} object${stranded === 1 ? '' : 's'} far from the rig ${stranded === 1 ? 'is' : 'are'} off this plot.`, tw, 6)) line(l, 6, 'H', DRAFT); }
   const drafts = ents.filter(e => e.kind === 'truss' && e.state === 'draft').length;
-  if (drafts) { y += 2; pdf.fill(DRAFT); line(`${drafts} draft truss${drafts === 1 ? '' : 'es'} (dashed): estimated, confirm before marking out.`.slice(0, 60), 6, 'H', DRAFT); }
+  if (drafts) { y += 2; for (const l of pdf.wrapTo(`${drafts} draft truss${drafts === 1 ? '' : 'es'} (dashed): estimated, confirm before marking out.`, tw, 6)) line(l, 6, 'H', DRAFT); }
 }

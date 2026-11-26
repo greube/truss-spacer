@@ -55,7 +55,7 @@ export function buildPack(doc: Doc, o: { jobName: string; source: string; visibl
   drawPlotPage(pdf, doc, { jobName: o.jobName, source: o.source, sheet: 1, sheets: total, visible: o.visible });
   pages.forEach((p, k) => {
     pdf.page(A4.w, A4.h);
-    pdf.fill(INK).text(M, M, `${o.jobName || 'Job'} - ${p.title}`, 10, { font: 'HB' });
+    pdf.fill(INK).text(M, M, pdf.fit(`${o.jobName || 'Job'} - ${p.title}`, A4.w - 2 * M, 10, 'HB'), 10, { font: 'HB' });
     pdf.stroke(INK).width(0.3).line(M, M + 2.5, A4.w - M, M + 2.5);
     p.lines.forEach((l, i) => pdf.text(M, M + 9 + i * LINE, l, SIZE, { font: 'C' }));
     pdf.fill(MUTED).text(M, A4.h - M + 4, `Truss CAD · ${new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}`, 7);

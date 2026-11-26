@@ -58,3 +58,35 @@ test('a few rig objects stranded far away (e.g. placed at 0,0) are left off and 
   expect(s).toContain('(Scale 1:50)');
   expect(s).toContain('(1 object far from the rig is off this plot.)');
 });
+
+test('review fix: a front-of-house truss far downstage stays on the plot', () => {
+  const d = newDoc(); d.layers.push({ id: 'L', name: 'LX', visible: true });
+  d.types.set('t', { key: 't', m: 'M', n: 'Spot', w: 400, src: 's', url: '', gdtfSpec: '', mode: '', category: 'spot' });
+  const tr = (id: string, y: number): Truss => ({ id, kind: 'truss', name: id, layerId: 'L', classId: null, positionId: null, legs: [{ a: { x: 0, y, z: 6000 }, b: { x: 16000, y, z: 6000 }, sections: [] }], boxSize: 300, state: 'confirmed', mvrUuid: null });
+  let u = 0;
+  for (const [id, y, n] of [['A', 0, 32], ['B', 3000, 32], ['C', 6000, 32], ['FOH', -16000, 4]] as const) {
+    d.entities.set(id, tr(id, y));
+    for (let i = 0; i < n; i++) d.entities.set('F' + u, { id: 'F' + u++, kind: 'fixture', name: '', layerId: 'L', classId: null, positionId: null, trussId: id, matrix: translate(IDENTITY, { x: 250 + i * (15500 / n), y, z: 5700 }), typeKey: 't', unitNumber: u, fixtureId: '', address: null, mvrUuid: null } as Fixture);
+  }
+  const pdf = new Pdf(); drawPlotPage(pdf, d, { jobName: 'J', source: '', sheet: 1, sheets: 1, visible: () => true });
+  const s = latin1(pdf.bytes());
+  expect(s).not.toMatch(/off this plot/);
+  expect(s).toContain('(FOH)');
+  expect(s).toContain('(Scale 1:100)');
+});
+
+test('review fix: every title block string fits the strip, keeping fixture counts', () => {
+  const d = rig();
+  d.types.set('t', { ...d.types.get('t')!, n: 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW' });
+  (d.entities.get('T2') as Truss).state = 'draft';
+  const pdf = new Pdf(), seen: { x: number; s: string; size: number; font: any }[] = [];
+  const orig = pdf.text.bind(pdf);
+  (pdf as any).text = (x: number, y: number, s: string, size: number, o: any = {}) => { seen.push({ x, s, size, font: o.font ?? 'H' }); return orig(x, y, s, size, o); };
+  drawPlotPage(pdf, d, { jobName: 'A very long job name for a plenary session in the big hall 2026 final final', source: 'Show_2026_Plenary_MVR_export_v3_FINAL_really_final.mvr', sheet: 1, sheets: 1, visible: () => true });
+  const tx = 420 - 10 - 60;
+  const title = seen.filter(t => t.x >= tx - 0.01);
+  expect(title.length).toBeGreaterThan(5);
+  for (const t of title) expect(t.x + pdf.textWidth(t.s, t.size, t.font), t.s).toBeLessThanOrEqual(420 - 10 + 0.01);
+  expect(title.some(t => /…\s×\s7$/.test(t.s) || /× 7$/.test(t.s))).toBe(true);
+  expect(title.map(t => t.s).join(' ')).toMatch(/confirm before\s+marking out\./);
+});

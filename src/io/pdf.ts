@@ -62,6 +62,20 @@ export class Pdf {
     const em = winAnsi(s).reduce((a, c) => a + (font === 'C' ? 600 : (c >= 32 && c <= 126 ? HELV[c - 32] : 556) * (font === 'HB' ? 1.06 : 1)), 0);
     return (em / 1000) * sizePt / PT;
   }
+  /** s trimmed with "…" (by measured width) so it fits maxMm; keep is a tail that is never cut (e.g. " × 7"). */
+  fit(s: string, maxMm: number, sizePt: number, font: Font = 'H', keep = ''): string {
+    if (this.textWidth(s + keep, sizePt, font) <= maxMm) return s + keep;
+    let t = s;
+    while (t.length && this.textWidth(t.trimEnd() + '…' + keep, sizePt, font) > maxMm) t = t.slice(0, -1);
+    return t.trimEnd() + '…' + keep;
+  }
+  /** s broken into lines (at spaces) that each fit maxMm. */
+  wrapTo(s: string, maxMm: number, sizePt: number, font: Font = 'H'): string[] {
+    const out: string[] = []; let cur = '';
+    for (const w of s.split(' ')) { const next = cur ? cur + ' ' + w : w; if (cur && this.textWidth(next, sizePt, font) > maxMm) { out.push(cur); cur = w; } else cur = next; }
+    if (cur) out.push(cur);
+    return out.map(l => this.fit(l, maxMm, sizePt, font));
+  }
   /** Text with its baseline at y (mm). */
   text(x: number, y: number, s: string, sizePt: number, o: { font?: Font; align?: 'left' | 'center' | 'right'; rotate?: number } = {}): this {
     const font = o.font ?? 'H', w = this.textWidth(s, sizePt, font), a = o.rotate ?? 0;

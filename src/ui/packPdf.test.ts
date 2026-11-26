@@ -40,3 +40,9 @@ test('an empty job gives the plot page and a page saying no fixtures', () => {
   expect(count(s)).toBe(2);
   expect(s).toContain('(No fixtures in this job yet.)');
 });
+
+test('review fix: long page headers are trimmed to the page width', () => {
+  const d = rig([2]); (d.entities.get('T0') as Truss).name = 'A truss with a really very extraordinarily long name that goes on and on and on';
+  const s = latin1(buildPack(d, { jobName: 'An equally long job name for the plenary hall show', source: '', visible: vis }));
+  expect(s).toMatch(/\(An equally long job name[^)]* - Marks: [^)]*\x85\) Tj/); // the page header, not the plot's title block
+});
