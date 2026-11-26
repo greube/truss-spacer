@@ -35,6 +35,7 @@ import { renderPowerPanel } from './ui/powerPanel';
 import { buildPowerPng } from './ui/powerPng';
 import { showImageSheet, showFileSheet, slug } from './ui/imageSheet';
 import { exportMvr } from './io/mvr/export';
+import { buildPack } from './ui/packPdf';
 import type { SpacingState } from './ui/spacingPanel';
 import { buildRunPng } from './ui/plotPng';
 import { runSections, runLength, zeroAlong } from './domain/runMarks';
@@ -258,7 +259,17 @@ function openReview() { reviewSheet = shell.openSheet('Fixture types', el => ren
 function openPicker(ids: string[]) {
   const s = shell.openSheet('Choose fixture type', el => renderPicker(el, app, ids, () => { s.close(); reviewSheet?.refresh(); }));
 }
-const jobs = createJobs({ app, shell, setDoc, openReview, exportMvr: () => { void exportJobMvr(); } });
+const jobs = createJobs({ app, shell, setDoc, openReview, exportMvr: () => { void exportJobMvr(); }, exportPack: () => exportJobPack() });
+function exportJobPack() {
+  if (app.previewActive) return;
+  try {
+    const name = jobs.current.name || 'Job';
+    const bytes = buildPack(app.doc, { jobName: name, source: jobs.current.sourceName, visible: e => app.visible(e) });
+    const drafts = [...app.doc.entities.values()].filter(e => e.kind === 'truss' && e.state === 'draft').length;
+    showFileSheet(shell, new Blob([bytes as BlobPart], { type: 'application/pdf' }), { heading: 'PDF pack', name: `${name.replace(/[\\/:*?"<>|]+/g, '-')} paperwork.pdf`, title: `${name} paperwork`, type: 'application/pdf',
+      notes: drafts ? [`${drafts} draft truss${drafts === 1 ? ' is' : 'es are'} dashed on the plot and marked provisional in the lists.`] : [] });
+  } catch (e) { console.warn(e); shell.toast("Couldn't make the PDF.", true); }
+}
 async function exportJobMvr() {
   if (app.previewActive) return;
   try {

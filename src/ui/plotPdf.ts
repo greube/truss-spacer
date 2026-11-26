@@ -25,8 +25,21 @@ export function drawPlotPage(pdf: Pdf, doc: Doc, o: { jobName: string; source: s
   const area = { x: MARGIN, y: MARGIN, w: PAGE.w - 2 * MARGIN - STRIP - 5, h: PAGE.h - 2 * MARGIN };
   const ents = [...doc.entities.values()].filter(e => o.visible(e));
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  for (const e of ents) { const b = entityBounds(doc, e); minX = Math.min(minX, b.min.x); minY = Math.min(minY, b.min.y); maxX = Math.max(maxX, b.max.x); maxY = Math.max(maxY, b.max.y); }
-  if (!ents.length) { minX = minY = 0; maxX = maxY = 1000; }
+  // scale to the rig (trusses and fixtures) plus 2 m all round; reference objects far away (point loads, things
+  // placed at 0,0) would otherwise shrink it, so they're clipped to the frame instead
+  const allRig = ents.filter(e => e.kind !== 'ref');
+  // a few rig objects stranded far away (placed at 0,0 by the import) mustn't shrink the plot either
+  const centre = (e: Entity) => { const b = entityBounds(doc, e); return { x: (b.min.x + b.max.x) / 2, y: (b.min.y + b.max.y) / 2 }; };
+  const window = (vals: number[]) => {
+    const v = vals.slice().sort((a, b) => a - b), lo = v[Math.floor(0.05 * (v.length - 1))], hi = v[Math.ceil(0.95 * (v.length - 1))], r = Math.max(hi - lo, 10000);
+    return [lo - r, hi + r];
+  };
+  const cs = allRig.map(centre), [x0, x1] = allRig.length ? window(cs.map(c => c.x)) : [0, 0], [y0, y1] = allRig.length ? window(cs.map(c => c.y)) : [0, 0];
+  const rigEnts = allRig.filter((_, i) => cs[i].x >= x0 && cs[i].x <= x1 && cs[i].y >= y0 && cs[i].y <= y1);
+  const stranded = allRig.length - rigEnts.length, sized = rigEnts.length ? rigEnts : ents;
+  for (const e of sized) { const b = entityBounds(doc, e); minX = Math.min(minX, b.min.x); minY = Math.min(minY, b.min.y); maxX = Math.max(maxX, b.max.x); maxY = Math.max(maxY, b.max.y); }
+  if (!sized.length) { minX = minY = 0; maxX = maxY = 1000; }
+  if (rigEnts.length) { minX -= 2000; minY -= 2000; maxX += 2000; maxY += 2000; }
   const { denom, fits } = pickScale({ w: maxX - minX || 1, h: maxY - minY || 1 }, area);
   const ox = area.x + (area.w - (maxX - minX) / denom) / 2, oy = area.y + (area.h - (maxY - minY) / denom) / 2;
   const P = (x: number, y: number) => ({ x: ox + (x - minX) / denom, y: oy + (maxY - y) / denom });
@@ -35,6 +48,7 @@ export function drawPlotPage(pdf: Pdf, doc: Doc, o: { jobName: string; source: s
   // frame
   pdf.stroke(INK).width(0.5).dash(null).rect(MARGIN / 2, MARGIN / 2, PAGE.w - MARGIN, PAGE.h - MARGIN);
 
+  pdf.clip(area.x - 2, area.y - 2, area.w + 4, area.h + 4);
   // reference objects
   pdf.stroke(REF).width(0.2);
   for (const e of ents) if (e.kind === 'ref') { const b = entityBounds(doc, e as RefObject), a = P(b.min.x, b.max.y); pdf.rect(a.x, a.y, mm(b.max.x - b.min.x), mm(b.max.y - b.min.y)); }
@@ -74,6 +88,7 @@ export function drawPlotPage(pdf: Pdf, doc: Doc, o: { jobName: string; source: s
     }
   }
 
+  pdf.restore();
   // title block
   const tx = PAGE.w - MARGIN - STRIP, tw = STRIP;
   pdf.stroke(INK).width(0.35).line(tx - 2.5, MARGIN / 2, tx - 2.5, PAGE.h - MARGIN / 2);
@@ -96,6 +111,7 @@ export function drawPlotPage(pdf: Pdf, doc: Doc, o: { jobName: string; source: s
   const keys = [...counts].sort((a, b) => b[1] - a[1]);
   for (const [name, n] of keys.slice(0, 24)) { const t = `${name} × ${n}`; line(pdf.textWidth(t, 6.5) > tw ? t.slice(0, 40) + '…' : t, 6.5); }
   if (keys.length > 24) line(`+${keys.length - 24} more types`, 6.5, 'H', MUTED);
+  if (stranded) { y += 2; line(`${stranded} object${stranded === 1 ? '' : 's'} far from the rig ${stranded === 1 ? 'is' : 'are'} off this plot.`, 6, 'H', DRAFT); }
   const drafts = ents.filter(e => e.kind === 'truss' && e.state === 'draft').length;
   if (drafts) { y += 2; pdf.fill(DRAFT); line(`${drafts} draft truss${drafts === 1 ? '' : 'es'} (dashed): estimated, confirm before marking out.`.slice(0, 60), 6, 'H', DRAFT); }
 }

@@ -37,3 +37,24 @@ test('the plot page has the title block, scale, draft label and every visible un
   expect(s).toContain('(2.1)'); // U.A address of 513
   expect(s).not.toContain('(999)');
 });
+
+test('reference objects far from the rig do not shrink the scale; they are clipped to the frame', () => {
+  const d = rig(), pdf = new Pdf();
+  d.entities.set('FAR', { id: 'FAR', kind: 'ref', name: 'Point load', layerId: 'L', classId: null, matrix: translate(IDENTITY, { x: -90000, y: 60000, z: 95000 }), bounds: { min: { x: -100, y: -100, z: 0 }, max: { x: 100, y: 100, z: 100 } } });
+  drawPlotPage(pdf, d, { jobName: 'J', source: '', sheet: 1, sheets: 1, visible: () => true });
+  const s = latin1(pdf.bytes());
+  expect(s).toContain('(Scale 1:50)'); // 8 m × 4 m rig plus 2 m all round: 12 m × 8.3 m fits A3 at 1:50
+  expect(s).toMatch(/re W n/); // drawing clipped to its frame
+});
+
+test('a few rig objects stranded far away (e.g. placed at 0,0) are left off and noted, not shrinking the plot', () => {
+  const d = rig(), pdf = new Pdf();
+  for (const e of d.entities.values()) if (e.kind === 'fixture') e.matrix = translate(e.matrix, { x: 100000, y: 0, z: 0 });
+  for (const e of d.entities.values()) if (e.kind === 'truss') e.legs = e.legs.map(l => ({ ...l, a: { ...l.a, x: l.a.x + 100000 }, b: { ...l.b, x: l.b.x + 100000 } }));
+  for (let i = 0; i < 20; i++) d.entities.set('X' + i, { id: 'X' + i, kind: 'fixture', name: '', layerId: 'L', classId: null, positionId: null, trussId: null, matrix: translate(IDENTITY, { x: 100500 + i * 350, y: 2000, z: 0 }), typeKey: 't', unitNumber: null, fixtureId: '', address: null, mvrUuid: null } as Fixture);
+  d.entities.set('LOST', { id: 'LOST', kind: 'fixture', name: '', layerId: 'L', classId: null, positionId: null, trussId: null, matrix: IDENTITY, typeKey: 't', unitNumber: 4242, fixtureId: '', address: null, mvrUuid: null } as Fixture);
+  drawPlotPage(pdf, d, { jobName: 'J', source: '', sheet: 1, sheets: 1, visible: () => true });
+  const s = latin1(pdf.bytes());
+  expect(s).toContain('(Scale 1:50)');
+  expect(s).toContain('(1 object far from the rig is off this plot.)');
+});

@@ -39,6 +39,9 @@ export class Pdf {
   fill(c: Rgb): this { this.cur.ops.push(`${c.map(v => n(v / 255)).join(' ')} rg`); return this; }
   width(mm: number): this { this.cur.ops.push(`${n(mm * PT)} w`); return this; }
   dash(mm: number[] | null): this { this.cur.ops.push(mm && mm.length ? `[${mm.map(v => n(v * PT)).join(' ')}] 0 d` : '[] 0 d'); return this; }
+  /** Saves the graphics state and clips drawing to a rectangle until restore(). */
+  clip(x: number, y: number, w: number, h: number): this { this.cur.ops.push(`q ${this.x(x)} ${this.y(y + h)} ${n(w * PT)} ${n(h * PT)} re W n`); return this; }
+  restore(): this { this.cur.ops.push('Q'); return this; }
   line(x1: number, y1: number, x2: number, y2: number): this { this.cur.ops.push(`${this.x(x1)} ${this.y(y1)} m ${this.x(x2)} ${this.y(y2)} l S`); return this; }
   poly(pts: { x: number; y: number }[], close: boolean, mode: 'S' | 'F' | 'B' = 'S'): this {
     if (pts.length < 2) return this;

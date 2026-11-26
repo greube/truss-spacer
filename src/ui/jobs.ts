@@ -9,7 +9,7 @@ import { inferCommand } from '../io/mvr/infer';
 import { enrichTypes } from '../domain/fixtures/enrich';
 
 export interface Current { id: string; name: string; sourceName: string; original: Blob | null }
-export interface JobDeps { app: AppCtx; shell: Shell; setDoc(doc: Doc, name: string): void; openReview(): void; exportMvr?(): void }
+export interface JobDeps { app: AppCtx; shell: Shell; setDoc(doc: Doc, name: string): void; openReview(): void; exportMvr?(): void; exportPack?(): void }
 
 /** Job lifecycle: open the latest on start, autosave after changes, the Job menu, and MVR import. */
 export function createJobs(d: JobDeps) {
@@ -67,6 +67,7 @@ export function createJobs(d: JobDeps) {
           h('button', { class: 'btn primary', type: 'button', text: 'Open MVR…', onclick: () => file.click() }),
           h('button', { class: 'btn', type: 'button', text: 'New job', onclick: async () => { s.close(); await newJob(); } }),
           h('button', { class: 'btn', type: 'button', text: 'Export MVR', onclick: () => { s.close(); d.exportMvr?.(); } }),
+          h('button', { class: 'btn', type: 'button', text: 'Export PDF pack', onclick: () => { s.close(); d.exportPack?.(); } }),
           h('button', { class: 'btn', type: 'button', text: 'Fixture types', onclick: () => { s.close(); d.openReview(); } }), file),
         current.sourceName ? h('p', { class: 'note', text: `From ${current.sourceName}. The original file is kept with the job, so Export MVR changes only what you changed.` }) : null,
         h('label', { class: 'note', text: 'Jobs on this device' }), list));
