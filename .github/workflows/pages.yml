@@ -90,8 +90,11 @@ jobs:
           find _site -maxdepth 2 | sort
 
       # The CAD preview is a TypeScript/Vite app: test and build it, then publish dist/ at /cad/
+      # continue-on-error: a broken CAD build must never stop the live app (and v2) from deploying;
+      # /cad/ is only published when the build and its tests pass
       - name: Build CAD preview
         if: steps.cad.outputs.exists == 'true'
+        continue-on-error: true
         working-directory: cadsrc
         run: |
           npm ci
