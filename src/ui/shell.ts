@@ -35,7 +35,7 @@ export function buildShell(root: HTMLElement, tools: ToolButton[], phoneExtra: T
   const toolbar = h('nav', { class: 'tools', 'aria-label': 'Tools' }, ...tools.map(t => btn(t)), btn(phoneExtra));
   const section = (title: string) => { const body = h('div'); return { el: h('section', { class: 'sec' }, h('h3', { text: title }), body), body }; };
   const info = section('Object info'), layers = section('Layers & classes'), positions = section('Hanging positions'), spacing = section('Spacing');
-  spacing.el.hidden = true;
+  spacing.el.hidden = true; spacing.el.classList.add('spacing-sec');
   const side = h('aside', { class: 'side' }, spacing.el, info.el, positions.el, layers.el);
   const xy = h('span', { text: '' }), msg = h('span', { class: 'msg', text: '' });
   const status = h('footer', { class: 'status' }, xy, msg);

@@ -33,8 +33,8 @@ export async function buildRunPng(r: RunPlot): Promise<Blob | null> {
   c.font = `500 32px ${FB}`; const room = W - 2 * P - tw - 80 - c.measureText('   ·   ' + date).width;
   T((room > 60 ? fit(r.jobName, `500 32px ${FB}`, room) + '   ·   ' : '') + date, W - P, 110, `500 32px ${FB}`, C.muted, 'right');
   const gaps = r.rows.map(x => x.gap).filter((g): g is number => g != null).sort((a, b) => a - b);
-  const gap = gaps.length ? (r.rows.some(x => x.uneven) ? `gaps vary (mostly ${f(gaps[Math.floor(gaps.length / 2)])})` : f(gaps[Math.floor(gaps.length / 2)])) : '—';
-  T(`${r.sections.length ? `Truss ${formatSections(r.sections, r.S.unit)} = ` : 'Truss '}${f(RL)}   ·   ${n} fixture${n === 1 ? '' : 's'}   ·   Gap ${gap}`, P, 165, `500 34px ${FB}`, C.ink);
+  const gap = gaps.length ? (r.rows.some(x => x.uneven) ? `Gaps vary (mostly ${f(gaps[Math.floor(gaps.length / 2)])})` : `Gap ${f(gaps[Math.floor(gaps.length / 2)])}`) : 'Gap —';
+  T(`${r.sections.length ? `Truss ${formatSections(r.sections, r.S.unit)} = ` : 'Truss '}${f(RL)}   ·   ${n} fixture${n === 1 ? '' : 's'}   ·   ${gap}`, P, 165, `500 34px ${FB}`, C.ink);
   const off = r.st.offset ? f(r.st.offset) : '';
   T(`Marks measured from ${refName}${r.st.ref === 'centre' ? (off ? `, truss ${off} towards ${r.st.offsetSide === 'after' ? 'B' : 'A'} (− towards A, + towards B)` : ' (− towards A, + towards B)') : r.st.ref === 'a' && off ? ` (end A is ${off} ${r.st.offsetSide === 'before' ? 'before' : 'past'} your 0)` : ''}${r.corners.length ? `   ·   ${r.corners.length} corner${r.corners.length > 1 ? 's' : ''}, shown unrolled` : ''}`, P, 212, `400 30px ${FB}`, C.muted);
   if (r.provisional) {

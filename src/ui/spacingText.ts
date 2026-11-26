@@ -13,7 +13,7 @@ export function spacingText(x: SpacingTextIn): string {
   const n = x.rows.length;
   const gaps = x.rows.map(r => r.gap).filter((g): g is number => g != null).sort((a, b) => a - b);
   const med = gaps.length ? gaps[Math.floor(gaps.length / 2)] : null;
-  const gapTxt = med == null ? '—' : x.rows.some(r => r.uneven) ? `gaps vary (mostly ${f(med)})` : f(med);
+  const gapTxt = med == null ? 'gap —' : x.rows.some(r => r.uneven) ? `gaps vary (mostly ${f(med)})` : `gap ${f(med)}`;
   const truss = x.sections.length ? `Truss ${formatSections(x.sections, x.S.unit)} = ${f(x.length)}` : `Truss ${f(x.length)}`;
   const off = x.st.offset ? f(x.st.offset) : '';
   const from = x.st.ref === 'a' ? `end A${off ? ` (end A is ${off} ${x.st.offsetSide === 'before' ? 'before' : 'past'} your 0)` : ''}`
@@ -21,6 +21,6 @@ export function spacingText(x: SpacingTextIn): string {
     : `the centre${off ? ` (truss ${off} towards ${x.st.offsetSide === 'after' ? 'B' : 'A'})` : ''}, − towards A, + towards B`;
   const lines = x.rows.map((r, k) => `${r.unit ?? k + 1}. ${markLabel(r.mark, x.st, x.S)}${x.showSec ? `  (sec ${r.sec} +${f(r.off)})` : ''}`
     + `${r.near ? ' NEAR JOIN' : ''}${r.offLine != null ? ` OFF LINE ${f(r.offLine)}` : ''}${r.uneven ? ' UNEVEN GAP' : ''}`);
-  return [x.provisional ? 'PROVISIONAL: confirm the truss first' : null, x.name, `${truss}, ${n} fixture${n === 1 ? '' : 's'}, gap ${gapTxt}`, `Marks from ${from}:`, ...lines]
+  return [x.provisional ? 'PROVISIONAL: confirm the truss first' : null, x.name, `${truss}, ${n} fixture${n === 1 ? '' : 's'}, ${gapTxt}`, `Marks from ${from}:`, ...lines]
     .filter((l): l is string => l != null).join('\n');
 }

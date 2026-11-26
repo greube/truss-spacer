@@ -15,6 +15,7 @@ import { MeasureTool } from './tools/measure';
 import { SpacingTool } from './tools/spacing';
 import { handleKey, undo, redo, zoomToFit, pruneSelection } from './app/actions';
 import { setSettings } from './core/commands/ops';
+import * as ops from './core/commands/ops';
 import { fmt } from './domain/spacing';
 import { buildShell } from './ui/shell';
 import { clear } from './ui/dom';
@@ -243,4 +244,4 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') navigator.serviceWorker.getRegistration().then(r => r?.update()).catch(() => {}); });
 }
 // For automated tests and debugging
-(window as any).__cad = { app, jobs, renderer, shell, importBuffer: (buf: ArrayBuffer, name = 'Imported rig.mvr') => jobs.importFile(new Blob([buf]), name) };
+(window as any).__cad = { app, jobs, renderer, shell, ops, spacingTool, importBuffer: (buf: ArrayBuffer, name = 'Imported rig.mvr') => jobs.importFile(new Blob([buf]), name) };
