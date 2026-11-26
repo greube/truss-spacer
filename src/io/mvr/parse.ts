@@ -1,7 +1,8 @@
 import type { Doc, Fixture, Truss, RefObject, FixtureType, Id } from '../../core/model/types';
 import type { Mat } from '../../core/geom/matrix';
 import type { V3 } from '../../core/geom/vec';
-import { IDENTITY, parseMvrMatrix } from '../../core/geom/matrix';
+import { IDENTITY, parseMvrMatrix, compose } from '../../core/geom/matrix';
+export { compose };
 import { newDoc } from '../../core/model/doc';
 import { glbBounds } from './glb';
 
@@ -14,12 +15,6 @@ const kids = (el: Element, tag?: string): Element[] => {
 const child = (el: Element, tag: string): Element | null => kids(el, tag)[0] ?? null;
 const text = (el: Element, tag: string): string => (child(el, tag)?.textContent ?? '').trim();
 
-/** a then b: the transform of something placed at b inside a frame placed at a. */
-export function compose(a: Mat, b: Mat): Mat {
-  const ap = (v: V3): V3 => ({ x: a.u.x * v.x + a.v.x * v.y + a.w.x * v.z, y: a.u.y * v.x + a.v.y * v.y + a.w.y * v.z, z: a.u.z * v.x + a.v.z * v.y + a.w.z * v.z });
-  const o = ap(b.o);
-  return { u: ap(b.u), v: ap(b.v), w: ap(b.w), o: { x: o.x + a.o.x, y: o.y + a.o.y, z: o.z + a.o.z } };
-}
 function boxThrough(m: Mat, b: Box): Box {
   const lo = { x: Infinity, y: Infinity, z: Infinity }, hi = { x: -Infinity, y: -Infinity, z: -Infinity };
   for (const x of [b.min.x, b.max.x]) for (const y of [b.min.y, b.max.y]) for (const z of [b.min.z, b.max.z]) {

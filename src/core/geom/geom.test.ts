@@ -52,3 +52,12 @@ describe('vectors', () => {
   });
   test('distance', () => { expect(dist({ x: 0, y: 0 }, { x: 3, y: 4 })).toBe(5); });
 });
+
+describe('matrix inverse', async () => {
+  const { invert, compose, translate, rotateAboutZ, IDENTITY } = await import('./matrix');
+  const near = (a: any, b: any) => { for (const k of ['u', 'v', 'w', 'o'] as const) for (const c of ['x', 'y', 'z'] as const) expect(a[k][c]).toBeCloseTo(b[k][c], 6); };
+  const a = rotateAboutZ(translate(IDENTITY, { x: 1200, y: -300, z: 6000 }), { x: 50, y: 70 }, 0.7);
+  const b = rotateAboutZ(translate(IDENTITY, { x: 10, y: 20, z: -300 }), { x: 0, y: 0 }, -1.1);
+  test('inverse of a moved and turned frame undoes it', () => near(compose(invert(a), a), IDENTITY));
+  test('taking a frame back off a composed matrix gives the local matrix', () => near(compose(invert(a), compose(a, b)), b));
+});
