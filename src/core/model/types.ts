@@ -34,6 +34,8 @@ export interface Truss {
   id: Id; kind: 'truss'; name: string; layerId: Id; classId: Id | null; positionId: Id | null;
   legs: Leg[]; boxSize: number; state: 'draft' | 'confirmed' | 'imported'; mvrUuid: Id | null;
   spacing?: TrussSpacing;
+  /** Which end the DMX chain starts from (undefined = A). */
+  dmxFrom?: 'a' | 'b';
 }
 
 export interface Fixture {
