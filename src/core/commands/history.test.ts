@@ -131,3 +131,14 @@ describe('power settings', () => {
     expect(doc.settings.power.loadPct).toBe(80);
   });
 });
+
+describe('DMX start end', () => {
+  test('round trip; anything but a or b is dropped', () => {
+    const { doc, truss } = rig();
+    (doc.entities.get(truss.id) as Truss).dmxFrom = 'b';
+    const j = JSON.parse(JSON.stringify(docToJSON(doc)));
+    expect((docFromJSON(j).entities.get(truss.id) as Truss).dmxFrom).toBe('b');
+    j.entities.find((e: any) => e.id === truss.id).dmxFrom = 'sideways';
+    expect((docFromJSON(j).entities.get(truss.id) as Truss).dmxFrom).toBeUndefined();
+  });
+});

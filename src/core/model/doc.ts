@@ -55,6 +55,7 @@ function cleanEntity(e: any): Entity | null {
       boxSize: num(e.boxSize) ? e.boxSize : 300, state: ['draft', 'confirmed', 'imported'].includes(e.state) ? e.state : 'draft',
       mvrUuid: str(e.mvrUuid) ? e.mvrUuid : null };
     if (isObj(e.spacing)) t.spacing = cleanSpacing(e.spacing);
+    if (e.dmxFrom === 'a' || e.dmxFrom === 'b') t.dmxFrom = e.dmxFrom;
     return t;
   }
   if (e.kind === 'ref') {
