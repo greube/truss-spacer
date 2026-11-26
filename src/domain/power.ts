@@ -8,8 +8,9 @@
    - fill "spread": use every circuit on the run's Socapex (lighter circuits). "fewest": as few as possible.
    - Optional phase balancing: circuits 1,4 = L1; 2,5 = L2; 3,6 = L3. */
 
-export type Fill = 'spread' | 'fewest';
-export interface PowerSettings { circuitW: number; loadPct: number; perSoca: number; fill: Fill; phases: boolean }
+import type { PowerSettings } from '../core/model/types';
+export type { PowerSettings };
+export type Fill = PowerSettings['fill'];
 export interface Span { from: number; to: number; load: number; over?: boolean }
 export interface TrussPlan { groups: Span[]; socas: number; unknown: number[]; overs: number[] }
 export interface Circuit { slot: number; label: string; phase: number; from: number; to: number; fixtures: number[]; load: number; over: boolean }

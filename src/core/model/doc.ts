@@ -1,5 +1,6 @@
 import type { Doc, Entity, Bounds, Fixture, Truss, RefObject, FixtureType, Layer, MvrClass, HangingPosition, Category, TrussSpacing } from './types';
-import { DEFAULT_SPACING } from './types';
+import { DEFAULT_SPACING, DEFAULT_POWER } from './types';
+import type { PowerSettings } from './types';
 import type { Mat } from '../geom/matrix';
 import { IDENTITY } from '../geom/matrix';
 
@@ -7,7 +8,7 @@ export const newId = (): string => crypto.randomUUID().toUpperCase();
 
 export function newDoc(): Doc {
   return { entities: new Map(), layers: [], classes: [], positions: [], types: new Map(),
-    settings: { unit: 'm', round: 5, labels: { unit: true, fid: false, addr: true } } };
+    settings: { unit: 'm', round: 5, labels: { unit: true, fid: false, addr: true }, power: { ...DEFAULT_POWER } } };
 }
 
 /** Plain JSON for saving. Entities and types are sorted so equal docs give equal JSON. */
@@ -66,6 +67,19 @@ function cleanEntity(e: any): Entity | null {
 }
 
 /** Loads saved JSON, dropping anything malformed rather than throwing. */
+function cleanPower(p: unknown): PowerSettings {
+  const d = DEFAULT_POWER;
+  if (!isObj(p)) return { ...d };
+  const inRange = (v: unknown, lo: number, hi: number, dv: number) => (num(v) && v >= lo && v <= hi ? v : dv);
+  return {
+    circuitW: inRange(p.circuitW, 100, 100000, d.circuitW),
+    loadPct: inRange(p.loadPct, 10, 100, d.loadPct),
+    perSoca: Math.round(inRange(p.perSoca, 1, 12, d.perSoca)),
+    fill: p.fill === 'fewest' || p.fill === 'spread' ? p.fill : d.fill,
+    phases: p.phases === true,
+  };
+}
+
 export function docFromJSON(j: unknown): Doc {
   const d = newDoc();
   if (!isObj(j)) return d;
@@ -86,6 +100,7 @@ export function docFromJSON(j: unknown): Doc {
     if (['m', 'mm', 'ft'].includes(s.unit)) d.settings.unit = s.unit;
     if (num(s.round)) d.settings.round = s.round;
     if (isObj(s.labels)) d.settings.labels = { unit: s.labels.unit !== false, fid: !!s.labels.fid, addr: s.labels.addr !== false };
+    d.settings.power = cleanPower(s.power);
   }
   return d;
 }

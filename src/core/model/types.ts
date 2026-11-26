@@ -51,7 +51,12 @@ export type Entity = Truss | Fixture | RefObject;
 export interface DocSettings {
   unit: 'm' | 'mm' | 'ft'; round: number;
   labels: { unit: boolean; fid: boolean; addr: boolean };
+  power: PowerSettings;
 }
+
+/** Power planning settings for the job (spec §10). */
+export interface PowerSettings { circuitW: number; loadPct: number; perSoca: number; fill: 'spread' | 'fewest'; phases: boolean }
+export const DEFAULT_POWER: PowerSettings = { circuitW: 2400, loadPct: 80, perSoca: 6, fill: 'spread', phases: false };
 
 export interface Doc {
   entities: Map<Id, Entity>;

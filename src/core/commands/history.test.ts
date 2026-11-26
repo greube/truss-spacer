@@ -104,3 +104,30 @@ describe('per-truss spacing settings', () => {
     expect((docFromJSON(JSON.parse(JSON.stringify(docToJSON(doc)))).entities.get(truss.id) as Truss).spacing).toBeUndefined();
   });
 });
+
+describe('power settings', () => {
+  test('new jobs get the owner defaults', async () => {
+    const { DEFAULT_POWER } = await import('../model/types');
+    expect(newDoc().settings.power).toEqual(DEFAULT_POWER);
+    expect(DEFAULT_POWER).toEqual({ circuitW: 2400, loadPct: 80, perSoca: 6, fill: 'spread', phases: false });
+  });
+  test('round trip, and bad or out-of-range values fall back to defaults', async () => {
+    const { DEFAULT_POWER } = await import('../model/types');
+    const { doc } = rig();
+    doc.settings.power = { circuitW: 2000, loadPct: 100, perSoca: 4, fill: 'fewest', phases: true };
+    expect(docFromJSON(JSON.parse(JSON.stringify(docToJSON(doc)))).settings.power).toEqual(doc.settings.power);
+    const junk = JSON.parse(JSON.stringify(docToJSON(doc)));
+    junk.settings.power = { circuitW: 5, loadPct: 500, perSoca: 'x', fill: 'most', phases: 'yes' };
+    expect(docFromJSON(junk).settings.power).toEqual(DEFAULT_POWER);
+    delete junk.settings.power;
+    expect(docFromJSON(junk).settings.power).toEqual(DEFAULT_POWER);
+  });
+  test('changing power settings is undoable', async () => {
+    const { setSettings } = await import('./ops');
+    const { doc } = rig(); const h = new History(doc);
+    h.exec(setSettings({ power: { ...doc.settings.power, loadPct: 50 } }));
+    expect(doc.settings.power.loadPct).toBe(50);
+    h.undo();
+    expect(doc.settings.power.loadPct).toBe(80);
+  });
+});
