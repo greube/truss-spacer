@@ -29,6 +29,7 @@ import { createJobs } from './ui/jobs';
 import { renderReview, renderPicker } from './ui/review';
 import { renderSpacingPanel } from './ui/spacingPanel';
 import { mismatchNote } from './ui/spacingText';
+import { renderPowerPanel } from './ui/powerPanel';
 import type { SpacingState } from './ui/spacingPanel';
 import { buildRunPng } from './ui/plotPng';
 import { runSections, runLength, zeroAlong } from './domain/runMarks';
@@ -68,7 +69,7 @@ const app: AppCtx = {
   setTool(id) {
     const t = tools[id]; if (!t) return;
     active.deactivate(); active = t; t.activate(app); shell.setActiveTool(id); shell.stage.style.cursor = t.cursor; scheduleDraw();
-    if (typeof renderSpacing === 'function') renderSpacing();
+    if (typeof renderSpacing === 'function') { renderSpacing(); renderPower(id === 'power'); }
   },
   units: { fmt: (mm: number) => fmt(mm, false, app.doc.settings) },
   visible(e: Entity) {
@@ -121,6 +122,20 @@ function renderSpacing() {
   if (!id && spSheet) { spSheet.close(); spSheet = null; }
 }
 spacingTool.onPick = () => { spState.sel = null; renderSpacing(); };
+// Power panel: side column on a laptop; on a phone a sheet that opens when the tool is chosen or a run is tapped
+let pwSheet: { refresh(): void; close(): void } | null = null;
+const pwHooks = { toast: (m: string, w?: boolean) => shell.toast(m, w), openReview: () => openReview(), exportSheet: () => { void exportPowerSheet(); }, jobName: () => shell.jobName.textContent ?? '' };
+function renderPower(open = false) {
+  const on = active.id === 'power';
+  shell.side.powerSec.hidden = !on || shell.isPhone();
+  clear(shell.side.power);
+  if (!on) { if (pwSheet) { pwSheet.close(); pwSheet = null; } return; }
+  if (!shell.isPhone()) { renderPowerPanel(shell.side.power, app, powerTool.plan(), powerTool.current, pwHooks); return; }
+  if (pwSheet) pwSheet.refresh();
+  else if (open) pwSheet = shell.openSheet('Power', el => renderPowerPanel(el, app, powerTool.plan(), powerTool.current, pwHooks), () => { pwSheet = null; });
+}
+powerTool.onPick = () => renderPower(true);
+async function exportPowerSheet() { shell.toast('Power sheet export is coming.', true); }
 async function exportRunImage(id: string, rows: MarkRow[], st: TrussSpacing, showSec: boolean) {
   const t = app.doc.entities.get(id) as Truss | undefined; if (!t) return;
   const corners: number[] = []; let acc = 0; for (const l of t.legs.slice(0, -1)) { acc += Math.hypot(l.b.x - l.a.x, l.b.y - l.a.y); corners.push(acc); }
@@ -145,6 +160,7 @@ async function exportRunImage(id: string, rows: MarkRow[], st: TrussSpacing, sho
 function renderPanels() {
   renderInfo();
   renderSpacing();
+  renderPower();
   clear(shell.side.layers); renderLayers(shell.side.layers, app);
   clear(shell.side.positions); renderPositions(shell.side.positions, app);
   shell.unitSel.value = app.doc.settings.unit;

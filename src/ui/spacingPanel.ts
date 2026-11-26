@@ -3,6 +3,7 @@ import type { Fixture, Truss, TrussSpacing } from '../core/model/types';
 import type { Unit } from '../domain/spacing';
 import { DEFAULT_SPACING } from '../core/model/types';
 import { h, clear } from './dom';
+import { seg, field, inputBox } from './controls';
 import { setProps } from '../core/commands/ops';
 import { fmt } from '../domain/spacing';
 import { runMarks, runSections, runLength, markLabel, alongRun } from '../domain/runMarks';
@@ -13,16 +14,6 @@ import { suggestSections } from '../tools/addTruss';
 
 export interface SpacingState { showSec: boolean; done: Set<string>; sel: string | null; key: string; /** Re-space also moves fixtures well off the truss line. */ incOff?: boolean }
 export interface SpacingHooks { toast(msg: string, warn?: boolean): void; exportImage(trussId: string, rows: ReturnType<typeof runMarks>, st: TrussSpacing, showSec: boolean): void }
-
-const seg = (opts: [string, string][], value: string, on: (v: string) => void) =>
-  h('div', { style: { display: 'flex', gap: '6px', flexWrap: 'wrap' } }, ...opts.map(([v, label]) => h('button', { class: 'ib', type: 'button', 'aria-pressed': String(v === value), style: { flex: '1 1 0', minWidth: '0' }, onclick: () => on(v) }, label)));
-const field = (label: string, input: HTMLElement) => h('label', { class: 'row' }, h('span', { text: label }), input);
-const inputBox = (value: string, onCommit: (v: string) => boolean | void, mode = 'decimal') => {
-  const el = h('input', { type: 'text', value, inputmode: mode, autocomplete: 'off', enterkeyhint: 'done' });
-  el.addEventListener('change', () => { if (onCommit(el.value.trim()) === false) el.value = value; });
-  el.addEventListener('keydown', e => { if (e.key === 'Enter') el.blur(); });
-  return el;
-};
 
 /** The Spacing tool's panel for one truss run: marks for the LD's positions, settings, and Re-space evenly. */
 export function renderSpacingPanel(el: HTMLElement, app: AppCtx, trussId: string, state: SpacingState, hooks: SpacingHooks): void {
