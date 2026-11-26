@@ -1,135 +1,66 @@
-# Truss Spacer: project handoff
+# Truss CAD (the CAD rebuild of Truss Spacer)
 
-A lightweight phone tool for spacing lighting fixtures along a truss during event bump-ins (load-ins). The owner is a lighting/production tech in Australia (Melbourne/Sydney), and uses it on an Android phone in dim venues.
+This `cad` branch holds the **CAD-style rebuild** of Truss Spacer.
 
-It was built in a claude.ai chat as a single-page web app published as a Claude artifact. This repo continues it in Claude Code.
+The owner is a lighting and production tech in Australia (Melbourne/Sydney) who puts rigs in. Lighting designers send them rigs from Vectorworks (MVR). The tool imports the LD's rig, then applies specialist tools (spacing, power, cabling) and outputs paperwork and MVR. It's used on an Android phone in dim venues, and on a laptop for prep.
 
-## Current state
+- **Design (the authority):** `docs/superpowers/specs/2026-11-26-lighting-cad-design.md`
+- **Milestone plans:** `docs/superpowers/plans/`
+- **Other branches:**
+  - `main` is the live v1 single-file app at https://greube.github.io/truss-spacer/. It's still used: the owner asked for left and centre offsets there.
+  - `v2` is a frozen reference (jobs, fixture types, power) at `/truss-spacer/v2/`.
+  - This branch deploys to **https://greube.github.io/truss-spacer/cad/**.
 
-- **v2 is in progress on the `v2` branch.** The plan, decisions and build order are in `docs/v2-plan.md`. Stages 1 (jobs with multiple trusses) and 2 (fixture types and power circuits) are done.
-- **Files, with no build step and no framework.** Plain `<script>` tags, not ES modules, so `index.html` still opens straight from `file://`.
-  - `index.html`: markup and CSS
-  - `js/spacing.js`: pure spacing maths, unchanged from v1
-  - `js/store.js`: jobs, migration, job files
-  - `js/power.js`: pure circuit and Socapex grouping
-  - `js/fixtures-data.js`: the generated fixture wattage database. **Don't edit it by hand**: edit `data/touring-fixtures.json` and run `tools/build-fixtures.py` (instructions at the top of that file).
-  - `js/fixtures.js`: fixture search and "my fixtures"
-  - `js/app.js`: UI
+## Commands
 
-  Alongside those, only what the PWA needs:
-  - `manifest.webmanifest`
-  - `sw.js`
-  - `icons/` (generated from `icon.svg` and `maskable.svg`)
-  - `fonts/` (self-hosted Latin-subset WOFF2 of Barlow, Barlow Condensed and JetBrains Mono, under the OFL)
+- `npm ci`: install.
+- `npm run dev`: dev server.
+- `npm test`: Vitest, all unit tests.
+  - Set `MVR_SAMPLE=/path/to/file.mvr` to also run the real-file tests.
+  - The owner's sample "Ford Uncovered" is a **client file: never commit, publish or serve it**. Load it in browser tests through Playwright `page.route` from Node memory.
+- `npm run build`: `tsc --noEmit`, then the Vite build to `dist/`, then `scripts/build-sw.mjs` writes `dist/sw.js` (the offline cache list). `BUILD_ID` env stamps the cache name.
+- Browser checks use the preinstalled Playwright via `createRequire(import.meta.url)('playwright')` in `.mjs` scripts. `window.__cad` exposes `{app, jobs, renderer, shell, importBuffer}` for tests.
 
-  The app makes no external requests.
-- **PWA**: `sw.js` precaches every file in its `ASSETS` list and serves stale-while-revalidate. **Add any new file to `ASSETS`.** The SW only registers over http(s).
-- **Deploy**: `.github/workflows/pages.yml` (on `main`) publishes `main` at https://greube.github.io/truss-spacer/ and the `v2` branch as a preview at https://greube.github.io/truss-spacer/v2/.
-  - The preview is labelled "Truss Spacer v2 preview" / "TS v2" so it installs as a separate app.
-  - A push to `v2` runs `.github/workflows/preview-v2.yml` (on `v2` only), which triggers the main workflow via `workflow_run`. Deploys always run from `main`, so they pass the Pages environment's branch rule.
-  - Each copy's `sw.js` gets `BUILD` stamped with its commit.
-  - **Both copies share one origin.** `sw.js` names caches by scope and only serves its own `ASSETS`, so the live app never intercepts `/v2/` or deletes the preview's cache. They also share `localStorage`: v2 reads but never writes v1's `trussSpacer` key.
-- The original artifact host injected the `<!doctype>`/`<head>` skeleton and a small CSS reset. Both have been inlined at the top of `index.html`, so the file now runs standalone. Open it in a browser or serve the folder.
-- **Tests**: `node --test tests/*.test.js`.
-  - `tests/spacing.test.js` checks `js/spacing.js` against 260 cases recorded from v1 in Chromium (`tests/v1-golden.json`). If it fails, the maths has changed.
-  - `tests/store.test.js` covers migration and job files.
-  - `tests/power.test.js` covers circuit grouping, including a brute-force check that the balancing is optimal.
+## Deploy
 
-## What the app does
+- Pushing to `cad` runs `.github/workflows/preview-cad.yml`.
+- That triggers `pages.yml` **on main** (`workflow_run`), which publishes `main` at `/`, `v2` at `/v2/`, and this branch at `/cad/`. For this branch it runs `npm ci`, the tests, then the build.
+- All three share one origin, so every service worker only serves and caches its own scope (`tcad:<scope>:<build>` here). It must **never** delete other caches.
 
-1. **Truss input**: section lengths typed as `3+3+2` or `4x2.5`. Commas and `-` also work as separators, because the Android numeric keypad has no `+` key. A row of quick-add chips sits under the box: size buttons, `+`, ⌫ and Clear. Chip sizes depend on the unit (m: 1–4, mm: 1000–4000, ft: 4/5/8/10).
-2. **Fixture count**: stepper, 1–99.
-3. **Layout modes** (`S.mode`):
-   - `edge`, labelled "Set end gaps": a user-set end gap. With "Different gap each end" (`S.diffEnds`) there are separate left and right gaps (`S.inset`, `S.insetR`). Fixtures are spaced evenly between.
-   - `equal`: the end gap equals the fixture gap, `L/(n+1)`.
-   - `cells`, labelled "Centred": the end gap is half the fixture gap, `L/n` cells.
-   - `fixed`: the user sets the gap (`S.spacing`) and the group is centred. The app warns if the group is longer than the truss and says how many fit.
-4. **Measure from** (`S.ref`): left end, centre (signed marks: − is left, + is right) or right end. When measuring from the right, the rows reverse, gaps read in that direction, and section numbers and in-section offsets count from the right.
-5. **In-section distances switch** (`showSec`): off by default and **deliberately not persisted**, so it resets to off on every load. The owner asked for this. When it's on, it adds section number plus offset within the section to the table, the copied text and the exported image (a second line under each mark, and extra table columns).
-6. **Join warning**: fixtures within `S.joinWarn` mm (default 100) of a section join are flagged in red everywhere, because clamps foul the couplers.
-7. **Units and rounding**: m, mm, or ft+in with fractions down to 1/16. Marks round to tape-friendly steps (default 5 mm or 1/8″). Changing units converts the existing values.
-8. **Marks table**: tap a row once to select it (highlighted on the drawing) and again to tick it done. Done state resets whenever the layout inputs change.
-9. **Copy list**: plain-text summary sent to the clipboard, for texting to crew.
-10. **Keep screen on**: Screen Wake Lock API, which fails gracefully.
-11. **Export image**: `buildPng()` draws a 2400px-wide white plot sheet on a canvas. It contains:
-    - The header with the date (en-AU), truss, count, mode, gap and end gaps
-    - The truss drawing with sections and joins
-    - Numbered fixtures
-    - A chain dimension line of all gaps, end gaps included
-    - The marks from the 0 reference
-    - The overall length
-    - The full table
-    - A footnote
+## Architecture (TypeScript, Vite, no UI framework)
 
-    Mark labels sit **horizontal when they fit** and tilt only as much as needed so neighbouring labels clear each other (`ang` computed from the minimum fixture spacing). Gap labels on the chain line are skipped when they don't fit.
-12. **Light and dark theme**: dark-first tokens on `:root`, with light overrides via `prefers-color-scheme` and `data-theme`.
+The direction of dependency goes top to bottom. The core has no DOM.
 
-## Jobs and trusses (v2 stage 1)
-
-- **Job**: a named set of trusses, plus job-wide settings (`unit`, `round`, `joinWarn`). Changing units converts every truss in the job.
-- **Truss**: `{id, name, sections, count, mode, inset, insetR, diffEnds, spacing, ref}`. Lengths are kept in the job's unit, as typed.
-- **Tabs**: **Rig** (an overview card per truss, plus "Copy rig"), then one tab per truss, then "+ Truss". Each truss tab is the v1 screen, with a name field and Move, Duplicate and Delete buttons.
-- **Jobs ▾ sheet**: rename, new, duplicate and delete jobs, and switch between them.
-  - Save file downloads `name.truss.json`.
-  - Share sends the job through the share sheet. Android won't share `.json`, so it falls back to `.truss.txt`.
-  - Open file imports a job with fresh ids.
-- **Saving**: `localStorage["trussSpacerJobs"]`. On first run, v1's `localStorage["trussSpacer"]` becomes the job "My rig". The v1 key is never deleted, because v1 on `main` shares the same origin.
-
-## Fixture types and power (v2 stage 2)
-
-- **Database**: Open Fixture Library wattages (MIT licence, about 614 fixtures), plus `data/touring-fixtures.json`.
-  - The curated list holds common rental fixtures, each with its spec-sheet URL and the exact quote.
-  - `src` codes: `s` = spec sheet, `l` = rated or lamp wattage, `o` = Open Fixture Library, `m` = the user's own, `j` = edited in this job.
-- **Types in a job**: picking a type copies it into `job.types[key]`, so a job file carries its wattages. "Edit W" changes a type's wattage for that job only.
-- **Types per truss**: `truss.fx[i]` is the type key of fixture `i`, counted left to right in physical order (not table order). `ST.typeAt(t, i)` repeats the last entry, so fixtures added later inherit the type before them.
-- **Fixture picker sheet** (`openFx(i)`): opened from the truss's Fixture type button (whole truss) or a circuit cell in the marks table. A single fixture's scope can be This fixture, Every 2nd or Whole truss.
-  - With an empty search it lists "In this job" and "My fixtures".
-  - "Not listed? Add your own" saves to `localStorage["trussSpacerMyFixtures"]`.
-- **Power rules** (`power.js`, settings in `job.settings`):
-  - A circuit is a run of neighbouring fixtures on one truss.
-  - The limit is `circuitW × loadPct%` (default 2400 W × 80% = 1920 W).
-  - Loads are balanced by keeping the heaviest circuit as light as possible.
-  - `perSoca` circuits per Socapex (6). Each truss has its own Socapex run, plus more if needed; lettered A, B and so on, so circuits are A1–A6, B1….
-  - `fill`: `spread` uses every circuit on the truss's Socapex runs; `fewest` uses as few circuits as possible.
-  - `phases`: optional. Picks circuit numbers within each Socapex to balance L1/L2/L3 across the rig (1 and 4 = L1, 2 and 5 = L2, 3 and 6 = L3).
-  - A fixture over the limit sits alone and is flagged. Fixtures with no type count as 0 W and are flagged.
-- **Fixture numbers** in power lists use `fxNo()`, which matches the marks table and reverses when measuring from the right.
-- **Outputs**:
-  - The plot image shows the circuit under each fixture (when there's room), plus Type and Circuit table columns.
-  - The Rig tab has a Power section with per-truss Socapex tables, Copy power, an Export sheet PNG, and Power settings.
-
-## Code map
-
-| Piece | Role |
+| Path | Role |
 |---|---|
-| `S` (`app.js`) | Working settings: the job's settings merged with the open truss. **Write through `put(key, value)`**, which also updates the job. Saved via `store.js`. All storage access is wrapped in try/catch. |
-| `store.js` | `load()`, `save()`, `newJob()`, `newTruss()`, `cleanJob()`, `toFile()` and `fromFile()`. It cleans and validates everything it loads or imports. |
-| `spacing.js` | `UF` (unit factors to mm; **all internal maths is in millimetres**), `parseSections(str, S)`, `compute(S)`, `fmt(mm, signed, S)`, `rnd(mm, S)` and `markTxt(row, S)`. Each takes `S` as a parameter. `app.js` wraps them as `fmt(mm, signed)` and so on, using the current `S`. |
-| `compute()` | Core maths. Returns `{L, secs, joins, pos, rows, warn, n}` or `{err}`. Each row is `{i, p, mark, sec, off, gap, near}`. |
-| `render()` | Draws the tabs, then either `renderRig()` or the truss view (summary, table, warnings and `svgDraw()`). Stores the last result in `window._r`. |
-| `svgDraw(r)` | The on-screen truss drawing (SVG, coloured from CSS tokens). |
-| `fillChips()` and chip handler | Quick-entry buttons for the truss box. |
-| `buildPng()` | Canvas export, with fixed light colours for printing. The title is the truss name, with the job name and date at top right. |
-| Export overlay | Preview, **Save PNG** and **Share**. Save uses the claude.ai `downloads` API when present (`getDownloads()`), otherwise an `<a download>` from the blob URL. **Share** uses `navigator.share({files})` and shows only when `navigator.canShare` accepts a PNG file. |
+| `src/core/geom` | `vec` (2D maths, `fitLine`, `projectOnSegment`), `matrix` (the MVR `Mat` {u, v, w, o}, `parseMvrMatrix`, `yawOf`, `withYaw`, `rotateAboutZ`), `address` (absolute DMX ↔ `U.A`) |
+| `src/core/model` | `types.ts`: `Doc`, `Truss` (legs and sections, `draft` / `confirmed` / `imported`), `Fixture`, `RefObject`, `FixtureType`, `Layer`, `MvrClass`, `HangingPosition`. `doc.ts`: `newDoc`, `docToJSON` / `docFromJSON` (clean and validate), `entityBounds` |
+| `src/core/commands` | `History` (undo/redo, `begin`/`end` groups). `ops.ts` holds every edit as a `Command`: `addEntities`, `removeEntities`, `setProps`, `transform` (fixtures follow their truss), `duplicate`, `setVisibility`, `setFixtureType`, `updateType`, `setSettings`, `addLayer` / `layerForNew`. **Every doc change goes through `History.exec`.** |
+| `src/core/index`, `snap.ts` | `GridIndex` (query, hit) and CAD snapping: truss ends, section joins, fixture centres, midpoints, 15° angles, grid |
+| `src/io` | `zip.ts` (read/write with Compression Streams), `mvr/glb.ts` (bounding boxes from glTF accessors), `mvr/parse.ts` + `import.ts` (MVR → Doc, keeping the original bytes and XML), `mvr/infer.ts` (draft trusses from hanging positions; `inferCommand` is undoable) |
+| `src/domain` | `spacing.ts` (v1 maths, golden-tested against 260 v1 cases), `fixtures/` (wattage DB `data.json`, built by `tools/build-fixtures.py` from OFL plus `data/touring-fixtures.json`; `match.ts`, `category.ts`, `enrich.ts`) |
+| `src/view` | `camera.ts`, `plan.ts` (Canvas 2D plan renderer with level of detail, dark/paper palettes), `symbols.ts`, `input.ts` (`Gestures`: tap, drag, pinch, long press, two-finger tap, wheel) |
+| `src/tools` | `Tool` interface plus `AppCtx`. `select` (tap, box select, live move with snapping, touch pan), `rotate`, `addTruss` (`suggestSections`), `addFixture`, `measure` |
+| `src/app/actions.ts` | delete, duplicate, nudge, undo, redo, zoom to fit, `handleKey` |
+| `src/store/jobs.ts` | IndexedDB jobs (`trussCad` database); never throws |
+| `src/ui` | `shell` (layout: laptop palette and side column at ≥ 900 px, phone bottom tool bar and sheets below), `objectInfo`, `layers`, `positions`, `review` (fixture types plus picker), `jobs` (job menu, autosave, import flow), `help`, `parse` (input parsing), `theme.css` |
+| `src/main.ts` | Wires everything together |
 
-## Next steps the owner has mentioned or been offered
+## Key decisions (see the spec and the plans' ledgers for more)
 
-- **Real Android app.** The owner's original ask was "a lightweight android application". The options, from least to most work:
-  1. ~~**PWA**~~: done (manifest, icons, service worker, self-hosted fonts, GitHub Pages).
-  2. **Capacitor or TWA wrapper**: produce an APK or AAB around the same `index.html`.
-  3. Native Kotlin rewrite. Probably not worth it.
-
-- Very dense layouts (e.g. 45 fixtures on 8 m with in-section distances on) overlap mark labels on the export even at 90°. This is a known limitation of the label maths.
-- A single "all gaps X" label on the export when the chain-line gap labels don't fit.
-- Swap the chip sizes for the owner's actual truss stock if asked (for example 0.5 m and 1.25 m pieces).
-- Make the in-section switch remember its state, but only if asked. It is currently off by design.
+- **Imported trusses:**
+  - Vectorworks MVRs may omit flown truss. Draft trusses are inferred per hanging position: height bands, straight legs (RANSAC when needed), corners joined within 1 m at the same height, 250 mm past the end fixtures.
+  - Drafts are dashed. The user confirms them. Drafts are never exported.
+- **Wattages:**
+  - Only confident database matches are applied automatically. Everything else goes to the **Fixture types** review.
+  - Custom@ types are named after the fixture.
+  - Unit number 0 from Vectorworks means none.
+- **Power, spacing and cabling rules** carry over from v2 (in the spec, §10).
 
 ## Conventions
 
-- Australian English in UI copy ("metres", "centre"). Dates use the `en-AU` locale.
-- Keep to a few plain files: no frameworks and no build step. Every file the app loads must be listed in `ASSETS` in `sw.js` and copied by `.github/workflows/pages.yml`.
-- Escape user text (job and truss names) with `esc()` before putting it into HTML.
-- Phone-first: touch targets of at least 42–50px, no horizontal scroll at 360–412px width, and safe-area insets respected.
-- Colours only via CSS tokens. Every new colour needs a light value and a dark value.
-- Wrap all `localStorage` access in try/catch.
-- Test by rendering in headless Chromium (Playwright) at about 412px. Use `has_touch`/`is_mobile` for tap behaviour. Check the PNG export at several fixture counts (6, 14, 24, 45) to exercise label tilting.
+- Australian English in the UI. Dates use `en-AU`.
+- Phone-first: targets ≥ 44 px, no horizontal page scroll, safe-area insets.
+- Escape user and file text (DOM building uses `textContent` through `ui/dom.ts`'s `h()`).
+- Wrap all storage in try/catch.
+- TDD: write the failing test first. Unit tests sit next to their code.

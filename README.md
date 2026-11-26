@@ -1,36 +1,14 @@
-# Truss Spacer
+# Truss CAD
 
-Phone tool for spacing lighting fixtures evenly along a truss during bump-in. Enter the truss sections and fixture count, pick a layout and where you're measuring from, and get tape marks for each fixture. It flags any fixture that lands near a section join, and can export a plot image for the crew.
+CAD-style lighting plot tool for the people who put rigs in. Import the LD's Vectorworks rig (MVR), then use specialist tools (spacing, power and cabling) on the plot, on a phone or a laptop. Works offline.
 
-## Run it
-
-Open `index.html` in any browser, or serve the folder:
+Preview: https://greube.github.io/truss-spacer/cad/ (the live Truss Spacer v1 is at https://greube.github.io/truss-spacer/).
 
 ```sh
-python3 -m http.server 8000
-node --test tests/*.test.js   # maths and storage tests
-# then open http://localhost:8000 on your phone (same Wi-Fi) or desktop
+npm ci
+npm run dev     # local dev server
+npm test        # unit tests (set MVR_SAMPLE=path.mvr for real-file tests)
+npm run build   # static, offline-ready build in dist/
 ```
 
-The offline service worker only runs when served over http(s) (or `localhost`), not from `file://`.
-
-## Install on Android
-
-Live at **https://greube.github.io/truss-spacer/** (deployed from `main` by `.github/workflows/pages.yml`).
-
-Open that URL in Chrome, then ⋮ → **Add to Home screen** → **Install**. It opens full screen from its own icon and works with no signal once it has loaded once.
-
-## Features
-
-- Jobs: save several rigs by name, each with any number of named trusses, plus a rig overview. Share a job file with crew or another phone.
-- Truss as sections (`3+3+2`, `4x2.5`) with quick-add buttons
-- Layouts: set end gaps (same or different each end), equal gaps, centred, fixed gap
-- Measure from left, centre or right
-- Metres, millimetres, or feet and inches, with tape-friendly rounding
-- Join-proximity warnings
-- Optional in-section distances
-- Tick-off marks list, copy as text, keep screen on
-- PNG plot export with dimensions: save, or share straight to Messages/WhatsApp
-- Installable PWA that works fully offline (self-hosted fonts)
-
-See `CLAUDE.md` for architecture, decisions and next steps.
+See `CLAUDE.md` for the architecture and `docs/superpowers/` for the design and plans.
