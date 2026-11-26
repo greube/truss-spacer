@@ -61,6 +61,6 @@ export async function buildPowerPng(rp: RigPower, doc: Doc, jobName: string): Pr
     }
     y += 20;
   });
-  T('Fixture numbers are the unit numbers from the plot. Loads use each fixture type\'s maximum power; check anything entered by hand.', P, H - 50, `400 26px ${FB}`, C.muted);
+  T('Fixture numbers are unit numbers from the plot (Fixture IDs where there are none). Loads use each fixture type\'s maximum power; check anything entered by hand.', P, H - 50, `400 26px ${FB}`, C.muted);
   return await new Promise(res => cv.toBlob(res, 'image/png'));
 }

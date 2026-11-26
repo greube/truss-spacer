@@ -9,7 +9,8 @@ export interface Shell {
   status: { xy: HTMLElement; msg: HTMLElement };
   phoneMsg: HTMLElement; selbar: HTMLElement; selWhat: HTMLElement; selInfo: HTMLButtonElement;
   setActiveTool(id: string): void;
-  openSheet(title: string, render: (el: HTMLElement) => void, onClose?: () => void): { refresh(): void; close(): void };
+  /** panel: a tool panel on a phone that leaves the top bar, plot and tool bar usable (not modal). */
+  openSheet(title: string, render: (el: HTMLElement) => void, onClose?: () => void, opts?: { panel?: boolean }): { refresh(): void; close(): void };
   toast(msg: string, warn?: boolean): void;
   isPhone(): boolean;
 }
@@ -51,12 +52,14 @@ export function buildShell(root: HTMLElement, tools: ToolButton[], phoneExtra: T
     side: { info: info.body, layers: layers.body, positions: positions.body, spacing: spacing.body, spacingSec: spacing.el, power: power.body, powerSec: power.el },
     status: { xy, msg }, phoneMsg, selbar, selWhat, selInfo,
     setActiveTool(id) { root.querySelectorAll('[data-tool]').forEach(b => b.setAttribute('aria-pressed', String(b.getAttribute('data-tool') === id))); },
-    openSheet(title, render, onClose) {
+    openSheet(title, render, onClose, opts) {
       const content = h('div', { class: 'content' });
       const close = () => { sheet.remove(); document.removeEventListener('keydown', esc); onClose?.(); };
       const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
-      const sheet = h('div', { class: 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-label': title, onclick: (e: Event) => { if (e.target === sheet) close(); } },
+      const panel = !!opts?.panel;
+      const sheet = h('div', { class: 'sheet' + (panel ? ' panel' : ''), role: 'dialog', 'aria-modal': String(!panel), 'aria-label': title, onclick: (e: Event) => { if (e.target === sheet) close(); } },
         h('div', { class: 'box' }, h('div', { class: 'head' }, h('h2', { text: title }), h('button', { class: 'btn', type: 'button', text: 'Close', onclick: close })), content));
+      if (panel) sheet.style.bottom = (toolbar.offsetHeight || 0) + 'px';
       document.body.append(sheet); document.addEventListener('keydown', esc);
       const refresh = () => { clear(content); render(content); };
       refresh();

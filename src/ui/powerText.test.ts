@@ -55,3 +55,10 @@ test('phases, an over-limit circuit and unnumbered fixtures', () => {
   expect(t).toMatch(/#\(no number\)  MegaPointe  2,600 W  OVER LIMIT/);
   expect(t).toMatch(/^L1 [\d,]+ W, L2 [\d,]+ W, L3 [\d,]+ W$/m);
 });
+test('without unit numbers, Fixture IDs are listed (Vectorworks files often have only those)', async () => {
+  const { fixtureNums } = await import('./powerText');
+  const d = rig();
+  for (const [id, fid] of [['F1', '923'], ['F2', '924'], ['F3', '925'], ['F4', 'A7']] as const) { const f = d.entities.get(id) as Fixture; f.unitNumber = null; f.fixtureId = fid; }
+  expect(fixtureNums(d, ['F1', 'F2', 'F3'])).toBe('923–925');
+  expect(fixtureNums(d, ['F3', 'F4'])).toBe('925, A7');
+});

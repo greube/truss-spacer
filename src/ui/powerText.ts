@@ -16,11 +16,18 @@ export function numList(nums: number[]): string {
   return out.join(', ');
 }
 
-/** Unit numbers of a set of fixtures, with any unnumbered ones noted. */
+/** Unit numbers of a set of fixtures (or their Fixture IDs when they have none), with any unnumbered ones noted. */
 export function fixtureNums(doc: Doc, ids: Id[]): string {
   const fs = ids.map(id => doc.entities.get(id) as Fixture | undefined).filter((f): f is Fixture => !!f);
-  const nums = fs.map(f => f.unitNumber).filter((n): n is number => n != null), none = fs.length - nums.length;
-  return [nums.length ? numList(nums) : '', none ? (nums.length ? `+${none} with no number` : '(no number)') : ''].filter(Boolean).join(' ');
+  const nums: number[] = [], other: string[] = []; let none = 0;
+  for (const f of fs) {
+    if (f.unitNumber != null) nums.push(f.unitNumber);
+    else if (/^\d+$/.test(f.fixtureId)) nums.push(+f.fixtureId);
+    else if (f.fixtureId) other.push(f.fixtureId);
+    else none++;
+  }
+  const listed = [nums.length ? numList(nums) : '', ...other].filter(Boolean).join(', ');
+  return [listed, none ? (listed ? `+${none} with no number` : '(no number)') : ''].filter(Boolean).join(' ');
 }
 
 /** "MegaPointe ×4, Aura ×2" for a set of fixtures. */

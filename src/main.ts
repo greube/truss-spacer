@@ -120,7 +120,7 @@ function renderSpacing() {
   shell.side.spacingSec.hidden = !id;
   clear(shell.side.spacing);
   if (id && !shell.isPhone()) renderSpacingPanel(shell.side.spacing, app, id, spState, spHooks);
-  if (id && shell.isPhone()) { if (spSheet) spSheet.refresh(); else spSheet = shell.openSheet('Spacing', el => { const cur = spacingTool.current; if (cur) renderSpacingPanel(el, app, cur, spState, spHooks); }, () => { spSheet = null; }); }
+  if (id && shell.isPhone()) { if (spSheet) spSheet.refresh(); else spSheet = shell.openSheet('Spacing', el => { const cur = spacingTool.current; if (cur) renderSpacingPanel(el, app, cur, spState, spHooks); }, () => { spSheet = null; }, { panel: true }); }
   if (!id && spSheet) { spSheet.close(); spSheet = null; }
 }
 spacingTool.onPick = () => { spState.sel = null; renderSpacing(); };
@@ -134,7 +134,7 @@ function renderPower(open = false) {
   if (!on) { if (pwSheet) { pwSheet.close(); pwSheet = null; } return; }
   if (!shell.isPhone()) { renderPowerPanel(shell.side.power, app, powerTool.plan(), powerTool.current, pwHooks); return; }
   if (pwSheet) pwSheet.refresh();
-  else if (open) pwSheet = shell.openSheet('Power', el => renderPowerPanel(el, app, powerTool.plan(), powerTool.current, pwHooks), () => { pwSheet = null; });
+  else if (open) pwSheet = shell.openSheet('Power', el => renderPowerPanel(el, app, powerTool.plan(), powerTool.current, pwHooks), () => { pwSheet = null; }, { panel: true });
 }
 powerTool.onPick = () => renderPower(true);
 async function exportPowerSheet() {

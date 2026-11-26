@@ -22,7 +22,7 @@ export function renderPowerPanel(el: HTMLElement, app: AppCtx, rp: RigPower, cur
   if (!rp.groups.length) { body.append(h('p', { class: 'note', text: 'No fixtures in this job yet.' })); return; }
 
   // totals
-  body.append(h('div', { class: 'power-totals' },
+  body.append(h('div', { class: 'power-totals', style: { display: 'flex', alignItems: 'baseline', gap: '4px 10px', flexWrap: 'wrap' } },
     h('b', { text: W(tot.load), style: { font: '600 26px var(--f-display)' } }),
     h('span', { class: 'note', text: `${(tot.load / 240).toFixed(1)} A at 240 V · ${tot.circuits} circuit${tot.circuits === 1 ? '' : 's'} · ${tot.socas} Socapex` })));
   if (st.phases) body.append(h('p', { class: 'note power-phases', text: PHASE.map((p, k) => `${p} ${W(tot.phase[k])}`).join(' · ') }));
