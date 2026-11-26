@@ -6,13 +6,13 @@ import { GridIndex } from './core/index/grid';
 import { newDoc } from './core/model/doc';
 import { Camera } from './view/camera';
 import { PlanRenderer } from './view/plan';
-import { Gestures } from './view/input';
+import { Gestures, wheelAction } from './view/input';
 import { SelectTool } from './tools/select';
 import { RotateTool } from './tools/rotate';
 import { AddTrussTool } from './tools/addTruss';
 import { AddFixtureTool } from './tools/addFixture';
 import { MeasureTool } from './tools/measure';
-import { handleKey, undo, redo, zoomToFit } from './app/actions';
+import { handleKey, undo, redo, zoomToFit, pruneSelection } from './app/actions';
 import { setSettings } from './core/commands/ops';
 import { fmt } from './domain/spacing';
 import { buildShell } from './ui/shell';
@@ -62,6 +62,8 @@ const app: AppCtx = {
     const l = app.doc.layers.find(x => x.id === e.layerId), c = e.classId ? app.doc.classes.find(x => x.id === e.classId) : null;
     return (l ? l.visible : true) && (c ? c.visible : true);
   },
+  previewActive: false,
+  cancelPreview() { active.onDragCancel?.(); },
   notify(msg) { shell.status.msg.textContent = msg; const s = shell.phoneMsg.firstElementChild as HTMLElement; s.textContent = msg; shell.phoneMsg.hidden = !msg; },
 };
 
@@ -99,18 +101,23 @@ function renderPanels() {
   shell.unitSel.value = app.doc.settings.unit;
 }
 
-history.onChange(() => { index.rebuild(app.doc); for (const id of [...app.selection]) if (!app.doc.entities.has(id)) app.selection.delete(id); lastSel = '\0'; renderPanels(); scheduleDraw(); hooks.afterChange(); });
+history.onChange(() => { index.rebuild(app.doc); pruneSelection(app); lastSel = '\0'; renderPanels(); scheduleDraw(); hooks.afterChange(); });
 
 // Gestures on the plan go to the active tool; pinch and wheel always zoom
 new Gestures(shell.canvas, {
   tap: (p, m) => active.onTap?.(p, m),
-  longpress: (p, m) => { tools.select.onTap?.(p, m); if (app.selection.size && shell.isPhone()) openInfoSheet(); },
+  longpress: (p, m) => {
+    if (active.onLongPress) { active.onLongPress(p, m); return; }
+    if (active.id !== 'select') { active.onTap?.(p, m); return; } // drawing tools: a held tap still places
+    tools.select.onTap?.(p, m); if (app.selection.size && shell.isPhone()) openInfoSheet();
+  },
   dragstart: (p, m) => active.onDragStart?.(p, m),
   drag: (p, m) => active.onDrag?.(p, m),
   dragend: (p, m) => active.onDragEnd?.(p, m),
   dragcancel: () => active.onDragCancel?.(),
   pinch: (c, s, dx, dy) => { camera.panBy(dx, dy); camera.zoomAt(c, s); scheduleDraw(); },
-  wheel: (p, dy) => { camera.zoomAt(p, Math.exp(-dy * 0.0015)); scheduleDraw(); },
+  wheel: (p, e) => { const a = wheelAction(e); if (a.kind === 'zoom') camera.zoomAt(p, a.factor); else camera.panBy(a.dx, a.dy); scheduleDraw(); },
+  pan: (dx, dy) => { camera.panBy(dx, dy); scheduleDraw(); },
   twoFingerTap: () => { undo(app); shell.toast('Undone.'); },
   hover: (p, m) => {
     const w = camera.toWorld(p); shell.status.xy.textContent = `X ${app.units.fmt(w.x)}  Y ${app.units.fmt(w.y)}`;
@@ -177,6 +184,9 @@ shell.jobBtn.onclick = () => jobs.openSheet();
 app.setTool('select');
 renderPanels(); resize();
 void jobs.startup();
+// save straight away when the app is hidden or closed (the autosave waits 500 ms)
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { app.cancelPreview?.(); void jobs.saveNow(); } });
+window.addEventListener('pagehide', () => { app.cancelPreview?.(); void jobs.saveNow(); });
 
 // Offline: only over http(s). A new version reloads once when it takes over, and is checked for when the app comes back on screen.
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
@@ -184,7 +194,7 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').then(r => r.update()).catch(() => {}); });
   navigator.serviceWorker.addEventListener('controllerchange', async () => {
     if (!hadSW || reloaded) return; reloaded = true;
-    await jobs.saveNow(); location.reload();
+    app.cancelPreview?.(); await jobs.saveNow(); location.reload();
   });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') navigator.serviceWorker.getRegistration().then(r => r?.update()).catch(() => {}); });
 }

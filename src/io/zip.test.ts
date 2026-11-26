@@ -18,6 +18,10 @@ describe('zip', () => {
     await expect(readZip(buf(enc('%PDF-1.7 hello')))).rejects.toThrow("This file isn't a zip archive.");
     await expect(readZip(buf(enc('%PDF-1.7')))).rejects.toBeInstanceOf(ZipError);
   });
+  test('a cut-short download says so', async () => {
+    const z = await writeZip(files);
+    await expect(readZip(buf(z.slice(0, Math.floor(z.length / 2))))).rejects.toThrow(/looks incomplete/);
+  });
   test('truncated archive', async () => {
     const z = await writeZip(files);
     await expect(readZip(buf(z.slice(0, z.length - 30)))).rejects.toBeInstanceOf(ZipError);

@@ -58,14 +58,14 @@ export class SelectTool implements Tool {
     // move: snap the grabbed point, then apply the move live (outside History) so everything follows the finger
     const exclude = new Set<Id>(md.ids);
     for (const e of a.doc.entities.values()) if (e.kind === 'fixture' && e.trussId && exclude.has(e.trussId)) exclude.add(e.id);
-    if (md.temp) { md.temp.undo(a.doc); md.temp = null; a.index.rebuild(a.doc); }
+    if (md.temp) { md.temp.undo(a.doc); md.temp = null; a.previewActive = false; a.index.rebuild(a.doc); }
     const startW = md.ref, raw = a.camera.toWorld(s);
     const grabOffset = this.grabOffset ?? { x: 0, y: 0 };
     const target = { x: raw.x - grabOffset.x, y: raw.y - grabOffset.y };
     const sn = snap(target, { doc: a.doc, index: a.index, tolWorld: SNAP_PX / a.camera.scale, grid: 0, exclude });
     md.delta = { x: sn.p.x - startW.x, y: sn.p.y - startW.y };
     md.temp = transform(md.ids, mm => translate(mm, { x: md.delta.x, y: md.delta.y, z: 0 }));
-    md.temp.do(a.doc);
+    md.temp.do(a.doc); a.previewActive = true;
     a.notify(sn.label ? `Snap: ${sn.label}` : `Move ${a.units.fmt(Math.hypot(md.delta.x, md.delta.y))}`);
     a.requestDraw(true);
   }
@@ -76,7 +76,7 @@ export class SelectTool implements Tool {
     if (md?.kind === 'move') {
       if (!md.temp) this.onDrag(s, m);
       const mm = this.mode as Extract<Mode, { kind: 'move' }>;
-      if (mm.temp) { mm.temp.undo(a.doc); mm.temp = null; }
+      if (mm.temp) { mm.temp.undo(a.doc); mm.temp = null; a.previewActive = false; }
       const d = mm.delta;
       if (Math.hypot(d.x, d.y) > 0) a.history.exec(transform(mm.ids, x => translate(x, { x: d.x, y: d.y, z: 0 })));
       else a.index.rebuild(a.doc);
@@ -97,7 +97,8 @@ export class SelectTool implements Tool {
 
   onDragCancel() {
     const a = this.app, md = this.mode;
-    if (md?.kind === 'move' && md.temp) { md.temp.undo(a.doc); a.index.rebuild(a.doc); }
+    if (md?.kind === 'move' && md.temp) { md.temp.undo(a.doc); md.temp = null; a.index.rebuild(a.doc); }
+    if (a) a.previewActive = false;
     this.reset(); a?.requestDraw(true);
   }
 

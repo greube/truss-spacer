@@ -25,9 +25,11 @@ export async function readZip(buf: ArrayBuffer): Promise<Map<string, Uint8Array>
   // End of central directory: search backwards (comment may follow)
   let eocd = -1;
   for (let i = u8.length - 22; i >= Math.max(0, u8.length - 22 - 65535); i--) if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
-  if (eocd < 0) throw notZip();
+  const looksZip = u8.length >= 4 && dv.getUint32(0, true) === 0x04034b50;
+  const incomplete = () => new ZipError('This file looks incomplete. The download may have been cut short; try getting it again.');
+  if (eocd < 0) throw looksZip ? incomplete() : notZip();
   const count = dv.getUint16(eocd + 10, true), cdSize = dv.getUint32(eocd + 12, true), cdOff = dv.getUint32(eocd + 16, true);
-  if (cdOff + cdSize > u8.length) throw notZip();
+  if (cdOff + cdSize > u8.length) throw looksZip ? incomplete() : notZip();
   const out = new Map<string, Uint8Array>();
   const dec = new TextDecoder();
   let p = cdOff;

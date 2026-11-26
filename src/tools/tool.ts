@@ -17,6 +17,10 @@ export interface AppCtx {
   visible(e: Entity): boolean;
   /** Short message for the status line, e.g. the active snap. */
   notify(msg: string): void;
+  /** True while a tool has a live preview applied to the doc (a drag in progress). Saving and shortcuts wait. */
+  previewActive: boolean;
+  /** Cancels the active tool's live preview, if any. */
+  cancelPreview?(): void;
 }
 
 export interface Tool {

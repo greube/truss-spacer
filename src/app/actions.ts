@@ -33,7 +33,8 @@ export function nudge(app: AppCtx, dx: number, dy: number, fine = false): void {
 
 export function undo(app: AppCtx): void { app.history.undo(); pruneSelection(app); app.requestDraw(); }
 export function redo(app: AppCtx): void { app.history.redo(); pruneSelection(app); app.requestDraw(); }
-function pruneSelection(app: AppCtx) { for (const id of [...app.selection]) if (!app.doc.entities.has(id)) app.selection.delete(id); }
+/** Drops deleted and hidden objects from the selection, so nothing invisible gets moved or deleted. */
+export function pruneSelection(app: AppCtx): void { for (const id of [...app.selection]) { const e = app.doc.entities.get(id); if (!e || !app.visible(e)) app.selection.delete(id); } }
 
 export function zoomToFit(app: AppCtx, ids?: Id[]): void {
   const d = app.doc;
@@ -49,6 +50,8 @@ export function zoomToFit(app: AppCtx, ids?: Id[]): void {
 export interface KeyLike { key: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean }
 /** Standard CAD shortcuts. Returns true when the key was used. */
 export function handleKey(app: AppCtx, e: KeyLike): boolean {
+  // mid-drag, shortcuts would edit underneath the live preview: only Escape (cancel) works
+  if (app.previewActive) { if (e.key === 'Escape') { app.cancelPreview?.(); app.requestDraw(true); } return true; }
   const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
   if (mod && k === 'z') { e.shiftKey ? redo(app) : undo(app); return true; }
   if (mod && k === 'y') { redo(app); return true; }

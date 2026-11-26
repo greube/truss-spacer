@@ -17,7 +17,9 @@ export function createJobs(d: JobDeps) {
   let timer: ReturnType<typeof setTimeout> | null = null, warned = false, saving = Promise.resolve();
   const dateTxt = (t: number) => new Date(t).toLocaleString('en-AU', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 
-  async function saveNow() {
+  async function saveNow(): Promise<void> {
+    // never store a drag in progress: try again once it's over
+    if (d.app.previewActive) { autosave(); return saving; }
     const rec = { id: current.id, name: current.name, updated: Date.now(), doc: docToJSON(d.app.doc), original: current.original, sourceName: current.sourceName };
     saving = saving.then(async () => { const ok = await saveJob(rec); if (!ok && !warned) { warned = true; d.shell.toast("This device isn't saving jobs. Your work stays open until you close the app.", true); } });
     return saving;

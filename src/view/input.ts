@@ -10,9 +10,24 @@ export interface GestureHandlers {
   dragcancel?(): void;
   /** centre in screen px, scale relative to the last pinch event, and how far the centre moved */
   pinch?(centre: V2, scale: number, dx: number, dy: number): void;
-  wheel?(p: V2, deltaY: number, m: Mods): void;
+  wheel?(p: V2, e: WheelLike, m: Mods): void;
+  /** middle-button drag, or drag while Space is held: pan by screen pixels */
+  pan?(dx: number, dy: number): void;
   twoFingerTap?(): void;
   hover?(p: V2, m: Mods): void;
+}
+
+export interface WheelLike { deltaX: number; deltaY: number; deltaMode: number; ctrlKey: boolean }
+/**
+ * What a wheel event means: Ctrl+wheel (a trackpad pinch) and mouse-wheel notches zoom;
+ * smooth trackpad scrolling pans. Deltas are normalised from lines/pages to pixels.
+ */
+export function wheelAction(e: WheelLike): { kind: 'zoom'; factor: number } | { kind: 'pan'; dx: number; dy: number } {
+  const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
+  const dx = e.deltaX * k, dy = e.deltaY * k;
+  const notch = e.deltaMode !== 0 || (e.deltaX === 0 && Math.abs(e.deltaY) >= 50 && Number.isInteger(e.deltaY));
+  if (e.ctrlKey || notch) return { kind: 'zoom', factor: Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.0015)) };
+  return { kind: 'pan', dx: -dx, dy: -dy };
 }
 
 const LONGPRESS_MS = 500, TWO_TAP_MS = 250, TOUCH_SLOP = 8, MOUSE_SLOP = 3;
@@ -26,13 +41,20 @@ export class Gestures {
   private pinchD = 0; private pinchC: V2 = { x: 0, y: 0 }; private pinched = false; private twoStart = 0;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private lastMods: Mods = { pointerType: 'mouse', shift: false, ctrl: false, alt: false };
+  private space = false; private panning: { x: number; y: number } | null = null; private twoInvalid = false;
 
   constructor(private el: HTMLElement, private h: GestureHandlers) {
     el.addEventListener('pointerdown', e => this.down(e as PointerEvent));
     el.addEventListener('pointermove', e => this.move(e as PointerEvent));
     el.addEventListener('pointerup', e => this.up(e as PointerEvent, false));
     el.addEventListener('pointercancel', e => this.up(e as PointerEvent, true));
-    el.addEventListener('wheel', e => { const w = e as WheelEvent; w.preventDefault(); this.h.wheel?.(this.pos(w), w.deltaY, this.mods(w)); }, { passive: false } as any);
+    el.addEventListener('wheel', e => { const w = e as WheelEvent; w.preventDefault(); this.h.wheel?.(this.pos(w), w, this.mods(w)); }, { passive: false } as any);
+    if (typeof window !== 'undefined' && window.addEventListener) {
+      const typing = (t: EventTarget | null) => !!t && /^(INPUT|SELECT|TEXTAREA)$/.test((t as HTMLElement).tagName ?? '');
+      window.addEventListener('keydown', e => { if (e.key === ' ' && !typing(e.target)) this.space = true; });
+      window.addEventListener('keyup', e => { if (e.key === ' ') this.space = false; });
+      window.addEventListener('blur', () => { this.space = false; });
+    }
   }
 
   private pos(e: { clientX: number; clientY: number }): V2 { const r = this.el.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
@@ -43,14 +65,22 @@ export class Gestures {
 
   private down(e: PointerEvent) {
     const p = this.pos(e); this.lastMods = this.mods(e);
+    if (this.lastMods.pointerType === 'mouse' && (e.button === 1 || this.space) && !this.ptrs.size) {
+      e.preventDefault?.(); this.panning = p; try { this.el.setPointerCapture?.(e.pointerId); } catch { /* fine */ } return;
+    }
     try { this.el.setPointerCapture?.(e.pointerId); } catch { /* not capturable */ }
     this.ptrs.set(e.pointerId, { x: p.x, y: p.y, sx: p.x, sy: p.y, t0: this.now() });
     if (this.ptrs.size === 1) {
       this.consumed = false; this.dragging = false; this.pinched = false;
       this.clearTimer();
-      this.timer = setTimeout(() => { this.timer = null; if (!this.dragging && this.ptrs.size === 1) { this.consumed = true; this.h.longpress?.(p, this.lastMods); } }, LONGPRESS_MS);
+      // long press is a touch gesture; a mouse that pauses before dragging must still drag
+      if (this.lastMods.pointerType !== 'mouse')
+        this.timer = setTimeout(() => { this.timer = null; if (!this.dragging && this.ptrs.size === 1) { this.consumed = true; this.h.longpress?.(p, this.lastMods); } }, LONGPRESS_MS);
     } else if (this.ptrs.size === 2) {
       this.clearTimer();
+      // a second finger landing mid-drag (or after the first moved) is not an undo tap
+      const first = [...this.ptrs.values()][0];
+      this.twoInvalid = this.dragging || Math.hypot(first.x - first.sx, first.y - first.sy) > TOUCH_SLOP;
       if (this.dragging) { this.dragging = false; this.h.dragcancel?.(); }
       this.consumed = true; this.twoStart = this.now();
       const [a, b] = this.pair(); this.pinchD = Math.hypot(b.x - a.x, b.y - a.y) || 1; this.pinchC = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
@@ -59,6 +89,7 @@ export class Gestures {
 
   private move(e: PointerEvent) {
     const p = this.pos(e), m = this.mods(e);
+    if (this.panning) { this.h.pan?.(p.x - this.panning.x, p.y - this.panning.y); this.panning = p; return; }
     const ptr = this.ptrs.get(e.pointerId);
     if (!ptr) { if (m.pointerType === 'mouse' && !e.buttons) this.h.hover?.(p, m); return; }
     ptr.x = p.x; ptr.y = p.y;
@@ -80,13 +111,14 @@ export class Gestures {
 
   private up(e: PointerEvent, cancelled: boolean) {
     const p = this.pos(e), m = this.mods(e);
+    if (this.panning) { this.panning = null; try { this.el.releasePointerCapture?.(e.pointerId); } catch { /* fine */ } return; }
     const ptr = this.ptrs.get(e.pointerId); if (!ptr) return;
     const wasTwo = this.ptrs.size === 2;
     this.ptrs.delete(e.pointerId);
     try { this.el.releasePointerCapture?.(e.pointerId); } catch { /* fine */ }
     if (wasTwo) {
       // second finger lifted: a quick two-finger tap if nothing moved
-      if (!this.pinched && this.now() - this.twoStart < TWO_TAP_MS && !cancelled) this.twoTapPending = true;
+      if (!this.pinched && !this.twoInvalid && this.now() - this.twoStart < TWO_TAP_MS && !cancelled) this.twoTapPending = true;
       return;
     }
     if (this.ptrs.size) return;

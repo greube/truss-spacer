@@ -34,20 +34,20 @@ export class RotateTool implements Tool {
   onDrag(s: V2, m: Mods) {
     if (!this.active) return;
     const a = this.app;
-    if (this.temp) { this.temp.undo(a.doc); this.temp = null; }
+    if (this.temp) { this.temp.undo(a.doc); this.temp = null; a.previewActive = false; }
     let d = this.angleAt(s) - this.a0; d = Math.atan2(Math.sin(d), Math.cos(d));
     if (!m.alt) d = Math.round(d / STEP) * STEP;
     this.angle = d;
-    this.temp = transform([...a.selection], mm => rotateAboutZ(mm, this.pivot, d)); this.temp.do(a.doc);
+    this.temp = transform([...a.selection], mm => rotateAboutZ(mm, this.pivot, d)); this.temp.do(a.doc); a.previewActive = true;
     a.notify(`Rotate ${Math.round((d * 180) / Math.PI)}°`); a.requestDraw(true);
   }
   onDragEnd(s: V2, m: Mods) {
     if (!this.active) return;
     this.onDrag(s, m);
     const a = this.app, d = this.angle;
-    if (this.temp) { this.temp.undo(a.doc); this.temp = null; }
+    if (this.temp) { this.temp.undo(a.doc); this.temp = null; a.previewActive = false; }
     if (d) a.history.exec(transform([...a.selection], mm => rotateAboutZ(mm, this.pivot, d), 'Rotate'));
     this.active = false; a.requestDraw(true);
   }
-  onDragCancel() { if (this.temp && this.app) { this.temp.undo(this.app.doc); this.temp = null; this.app.requestDraw(true); } this.active = false; }
+  onDragCancel() { if (this.temp && this.app) { this.temp.undo(this.app.doc); this.temp = null; this.app.requestDraw(true); } if (this.app) this.app.previewActive = false; this.active = false; }
 }

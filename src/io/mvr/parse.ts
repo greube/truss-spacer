@@ -95,24 +95,30 @@ export function parseScene(dom: Document, files: Map<string, Uint8Array>): { doc
     return Number.isFinite(n) && n > 0 ? n : null;
   };
 
-  const walk = (list: Element, layerId: Id, frame: Mat) => {
+  let sizeless = 0;
+  const walk = (list: Element, layerId: Id, frame: Mat, parentTruss: Id | null = null) => {
     for (const el of kids(list)) {
       const id = el.getAttribute('uuid') ?? '', name = el.getAttribute('name') ?? '';
       const hasM = !!child(el, 'Matrix');
       const local = hasM ? parseMvrMatrix(text(el, 'Matrix')) : IDENTITY;
       const m = compose(frame, local);
       const classId = text(el, 'Classing') || null;
-      if (el.tagName === 'GroupObject') { const cl = child(el, 'ChildList'); if (cl) walk(cl, layerId, m); continue; }
+      if (el.tagName === 'GroupObject') { const cl = child(el, 'ChildList'); if (cl) walk(cl, layerId, m, parentTruss); continue; }
       if (!id) continue;
+      // objects can carry children of their own (e.g. fixtures hung on a truss)
+      const kidsList = child(el, 'ChildList');
       if (el.tagName === 'Fixture') {
         if (!hasM) noMatrix++;
         const unit = parseInt(text(el, 'UnitNumber'), 10);
         const f: Fixture = { id, kind: 'fixture', name, layerId, classId, positionId: text(el, 'Position') || null, trussId: null, matrix: m,
           typeKey: typeOf(el), unitNumber: Number.isFinite(unit) && unit > 0 ? unit : null, fixtureId: text(el, 'FixtureID'), address: address(el), mvrUuid: id };
+        if (parentTruss) f.trussId = parentTruss;
         doc.entities.set(id, f);
+        if (kidsList) walk(kidsList, layerId, m, parentTruss);
       } else if (el.tagName === 'Truss') {
         if (!hasM) noMatrix++;
-        const b = objBox(el) ?? { min: { x: 0, y: -150, z: -150 }, max: { x: 3000, y: 150, z: 150 } };
+        const found = objBox(el); if (!found) sizeless++;
+        const b = found ?? { min: { x: 0, y: -150, z: -150 }, max: { x: 3000, y: 150, z: 150 } };
         const ex = b.max.x - b.min.x, ey = b.max.y - b.min.y, ez = b.max.z - b.min.z;
         const cx = (b.min.x + b.max.x) / 2, cy = (b.min.y + b.max.y) / 2, cz = (b.min.z + b.max.z) / 2;
         const tower = ez > ex && ez > ey;
@@ -122,11 +128,13 @@ export function parseScene(dom: Document, files: Map<string, Uint8Array>): { doc
           legs: [{ a: tidyV(a), b: tidyV(bb), sections: [Math.round(tower ? ez : ex)] }], boxSize: Math.round(tower ? Math.min(ex, ey) : Math.min(ey, ez)) || 300,
           state: 'imported', mvrUuid: id };
         doc.entities.set(id, t);
+        if (kidsList) walk(kidsList, layerId, m, id);
       } else if (['SceneObject', 'VideoScreen', 'Projector', 'Support'].includes(el.tagName)) {
         if (!hasM) noMatrix++;
         const b = objBox(el);
         const ro: RefObject = { id, kind: 'ref', name: name || el.tagName, layerId, classId, matrix: m, bounds: b ? tidy(b) : null };
         doc.entities.set(id, ro);
+        if (kidsList) walk(kidsList, layerId, m, parentTruss);
       }
     }
   };
@@ -137,6 +145,7 @@ export function parseScene(dom: Document, files: Map<string, Uint8Array>): { doc
     const lm = child(l, 'Matrix') ? parseMvrMatrix(text(l, 'Matrix')) : IDENTITY;
     const cl = child(l, 'ChildList'); if (cl) walk(cl, id, lm);
   }
+  if (sizeless) warnings.push(sizeless === 1 ? "1 truss had no readable size, so it's shown 3 m long. Check its length." : `${sizeless} trusses had no readable size, so they're shown 3 m long. Check their lengths.`);
   if (noMatrix) warnings.push(noMatrix === 1 ? '1 object had no position and was placed at 0,0.' : `${noMatrix} objects had no position and were placed at 0,0.`);
   return { doc, warnings };
 }

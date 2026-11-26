@@ -58,6 +58,29 @@ describe('importMvr', () => {
     expect(t2.legs[0].a).toEqual({ x: 0, y: 5000, z: 0 }); expect(t2.legs[0].b).toEqual({ x: 0, y: 5000, z: 3000 });
     expect(r.bounds).toEqual({ min: { x: 0, y: 0, z: 0 }, max: { x: 4000, y: 2000, z: 400 } });
   });
+  test('fixtures nested under a truss or another fixture are imported (and attached to the truss)', async () => {
+    const xml = `<?xml version="1.0"?><GeneralSceneDescription verMajor="1" verMinor="5"><Scene><AUXData/><Layers><Layer name="Rig" uuid="L"><ChildList>
+      <Truss name="T" uuid="T1"><Matrix>{1,0,0}{0,1,0}{0,0,1}{1000,0,6000}</Matrix><Geometries/><ChildList>
+        <Fixture name="A" uuid="F1"><Matrix>{1,0,0}{0,1,0}{0,0,1}{500,0,-300}</Matrix><GDTFSpec>Robe@MegaPointe.gdtf</GDTFSpec><FixtureID>1</FixtureID><UnitNumber>1</UnitNumber></Fixture>
+        <Fixture name="B" uuid="F2"><Matrix>{1,0,0}{0,1,0}{0,0,1}{1500,0,-300}</Matrix><GDTFSpec>Robe@MegaPointe.gdtf</GDTFSpec><FixtureID>2</FixtureID><UnitNumber>2</UnitNumber></Fixture>
+      </ChildList></Truss>
+      <Fixture name="C" uuid="F3"><Matrix>{1,0,0}{0,1,0}{0,0,1}{9000,0,0}</Matrix><GDTFSpec>X@Y.gdtf</GDTFSpec><FixtureID>3</FixtureID><UnitNumber>3</UnitNumber><ChildList>
+        <Fixture name="D" uuid="F4"><Matrix>{1,0,0}{0,1,0}{0,0,1}{100,0,0}</Matrix><GDTFSpec>X@Y.gdtf</GDTFSpec><FixtureID>4</FixtureID><UnitNumber>4</UnitNumber></Fixture></ChildList></Fixture>
+    </ChildList></Layer></Layers></Scene></GeneralSceneDescription>`;
+    const { doc } = await imp(await zipOf({ 'GeneralSceneDescription.xml': xml }));
+    expect(fixtures(doc).map(f => f.id).sort()).toEqual(['F1', 'F2', 'F3', 'F4']);
+    expect((doc.entities.get('F1') as Fixture).matrix.o).toEqual({ x: 1500, y: 0, z: 5700 });
+    expect((doc.entities.get('F1') as Fixture).trussId).toBe('T1');
+    expect((doc.entities.get('F4') as Fixture).matrix.o.x).toBe(9100);
+  });
+  test('trusses with no readable size get a warning', async () => {
+    const { warnings } = await imp(await makeMvr({ symdefs: [{ uuid: 'SD', name: 'Box', glbs: ['t.3ds'] }], layers: [{ uuid: 'L', name: 'Rig', trusses: [{ uuid: 'T1', name: 'Box', matrix: '{1,0,0}{0,1,0}{0,0,1}{0,0,6000}', symdef: 'SD' }] }] }));
+    expect(warnings.join(' ')).toMatch(/1 truss had no readable size/);
+  });
+  test('a cut-short download says it looks incomplete', async () => {
+    const full = new Uint8Array(await makeMvr({ fixtures: [{ uuid: 'A' }] }));
+    await expect(imp(full.slice(0, Math.floor(full.length / 2)).buffer as ArrayBuffer)).rejects.toThrow(/looks incomplete/);
+  });
   test('unknown elements are tolerated', async () => {
     const { doc } = await imp(await makeMvr({ fixtures: [{ uuid: 'A' }], extraXml: '<Weird><Stuff a="1"/></Weird>' }));
     expect(fixtures(doc)).toHaveLength(1);

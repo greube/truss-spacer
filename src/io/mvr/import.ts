@@ -10,7 +10,7 @@ export interface ImportResult { doc: Doc; original: Uint8Array; xml: string; war
 export async function importMvr(buf: ArrayBuffer, opts: { parseXml?: (xml: string) => Document } = {}): Promise<ImportResult> {
   let files: Map<string, Uint8Array>;
   try { files = await readZip(buf); }
-  catch (e) { throw new MvrError(e instanceof ZipError && /damaged|format/.test(e.message) ? e.message : "This isn't a zip archive, so it can't be an MVR."); }
+  catch (e) { throw new MvrError(e instanceof ZipError && /damaged|format|incomplete/.test(e.message) ? e.message : "This isn't a zip archive, so it can't be an MVR."); }
   const entry = [...files.keys()].find(k => k.toLowerCase() === 'generalscenedescription.xml');
   if (!entry) throw new MvrError("This file isn't an MVR (no GeneralSceneDescription.xml).");
   const xml = new TextDecoder().decode(files.get(entry)!);

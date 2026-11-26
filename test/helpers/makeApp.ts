@@ -18,7 +18,7 @@ export function makeApp(): AppCtx & { historyLength(): number } {
     doc, history, camera, index, selection: new Set(), preview: null,
     requestDraw: (rebuild?: boolean) => { if (rebuild) index.rebuild(app.doc); },
     setTool: () => {}, units: { fmt: (mm: number) => (mm / 1000).toFixed(3) + ' m' },
-    visible: () => true, notify: () => {},
+    visible: () => true, notify: () => {}, previewActive: false,
     historyLength: () => { let n = 0; while (history.canUndo) { history.undo(); n++; } for (let i = 0; i < n; i++) history.redo(); return n; },
   };
   void steps;
