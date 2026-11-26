@@ -2,7 +2,7 @@
 import type { Doc } from '../core/model/types';
 import type { RigPlan } from '../domain/power';
 import type { RigPower } from '../domain/powerRig';
-import { W, PHASE, fixtureNums, typeSummary } from './powerText';
+import { W, PHASE, fixtureNums, typeSummary, noWattsNote } from './powerText';
 
 const ROW = 60, HEAD = 96, SOCA = 48;
 
@@ -50,7 +50,7 @@ export async function buildPowerPng(rp: RigPower, doc: Doc, jobName: string): Pr
         const cy = y + ROW / 2 + 2, col = cc.over ? C.warn : C.ink, ids = cc.fixtures.map(i => g.fixtureIds[i]);
         T(cc.label, X.circ, cy, `700 34px ${FM}`, col, 'left', 'middle');
         if (st.phases) T(PHASE[cc.phase - 1], X.phase, cy, `600 30px ${FM}`, col, 'left', 'middle');
-        T(fit(`#${fixtureNums(doc, ids)}   ${typeSummary(doc, ids)}`, `500 30px ${FB}`, X.load - X.fx - 260), X.fx, cy, `500 30px ${FB}`, col, 'left', 'middle');
+        T(fit(`#${fixtureNums(doc, ids)}   ${typeSummary(doc, ids)}${noWattsNote(doc, ids)}`, `500 30px ${FB}`, X.load - X.fx - 260), X.fx, cy, `500 30px ${FB}`, col, 'left', 'middle');
         T(W(cc.load), X.load, cy, `600 30px ${FM}`, col, 'right', 'middle');
         const pct = plan.limit ? cc.load / plan.limit : 0;
         c.fillStyle = C.line; c.fillRect(X.bar, cy - 6, barW, 12);

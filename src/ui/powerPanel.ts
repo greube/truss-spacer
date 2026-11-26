@@ -5,7 +5,7 @@ import { h } from './dom';
 import { seg, field, inputBox } from './controls';
 import { setSettings } from '../core/commands/ops';
 import { powerColours } from '../view/powerOverlay';
-import { powerText, fixtureNums, typeSummary, W, PHASE } from './powerText';
+import { powerText, fixtureNums, typeSummary, noWattsNote, W, PHASE } from './powerText';
 
 export interface PowerHooks {
   toast(msg: string, warn?: boolean): void;
@@ -73,7 +73,7 @@ export function renderPowerPanel(el: HTMLElement, app: AppCtx, rp: RigPower, cur
           h('b', { text: `${c.label}${st.phases ? ' ' + PHASE[c.phase - 1] : ''}`, style: { font: '600 15px var(--f-num)' } }),
           h('span', { style: { minWidth: '0' } },
             h('span', { text: `#${fixtureNums(doc, ids)}`, style: { display: 'block', font: '500 13px var(--f-num)' } }),
-            h('span', { class: 'note', text: typeSummary(doc, ids), style: { display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }),
+            h('span', { class: 'note', text: typeSummary(doc, ids) + noWattsNote(doc, ids), style: { display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }),
             h('span', { style: { display: 'block', height: '4px', borderRadius: '2px', background: 'var(--line)', marginTop: '3px' } },
               h('span', { style: { display: 'block', height: '4px', borderRadius: '2px', width: Math.min(100, pct) + '%', background: c.over ? 'var(--warn)' : 'var(--ok)' } }))),
           h('span', { style: { textAlign: 'right', font: '500 13px var(--f-num)', color: c.over ? 'var(--warn)' : '' } }, W(c.load), h('span', { class: 'note', text: c.over ? 'Over limit' : `${pct}%`, style: { display: 'block', color: c.over ? 'var(--warn)' : '' } }))));

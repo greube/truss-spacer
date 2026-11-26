@@ -28,7 +28,7 @@ export class PowerTool implements Tool {
   activate(app: AppCtx) {
     this.app = app; this.cache = null;
     app.fixtureColour = (f: Fixture) => { this.plan(); return this.cache!.colours.get(f.id) ?? null; };
-    app.preview = (ctx, cam) => { const rp = this.plan(); drawPowerOverlay(ctx, cam, app.doc, rp, (e) => app.visible(e), 'dark', this.cache!.colours); };
+    app.preview = (ctx, cam) => { const rp = this.plan(); drawPowerOverlay(ctx, cam, app.doc, rp, (e) => app.visible(e), app.theme ?? 'dark', this.cache!.colours); };
     app.notify(HINT);
     app.requestDraw();
   }

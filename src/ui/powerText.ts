@@ -41,9 +41,15 @@ export function typeSummary(doc: Doc, ids: Id[]): string {
   return [...c].map(([k, v]) => (v > 1 ? `${k} ×${v}` : k)).join(', ');
 }
 
+/** " (2 with no wattage)" for fixtures counted as 0 W, so they don't pass as real loads. */
+export function noWattsNote(doc: Doc, ids: Id[]): string {
+  const n = ids.filter(id => { const f = doc.entities.get(id) as Fixture | undefined; const w = f ? doc.types.get(f.typeKey)?.w : null; return !(typeof w === 'number' && Number.isFinite(w) && w >= 0); }).length;
+  return n ? ` (${n} with no wattage)` : '';
+}
+
 /** The rig's power list for texting, in v2's format, one block per power run. */
 export function powerText(jobName: string, rp: RigPower, doc: Doc): string {
-  const st = doc.settings.power, tot = rp.plan.total;
+  const st = doc.settings.power, tot = rp.plan.total, noW = (ids: Id[]) => noWattsNote(doc, ids);
   const lines = [`POWER: ${jobName}`, `Circuits up to ${W(rp.plan.limit)} (${st.loadPct}% of ${W(st.circuitW)}), ${rp.plan.perSoca} per Socapex`];
   rp.plan.trusses.forEach((pt, gi) => {
     const g = rp.groups[gi];
@@ -52,7 +58,7 @@ export function powerText(jobName: string, rp: RigPower, doc: Doc): string {
       lines.push(`Socapex ${so.label}`);
       for (const c of so.circuits) {
         const ids = c.fixtures.map(i => g.fixtureIds[i]);
-        lines.push(`  ${c.label}${st.phases ? ' ' + PHASE[c.phase - 1] : ''}  #${fixtureNums(doc, ids)}  ${typeSummary(doc, ids)}  ${W(c.load)}${c.over ? '  OVER LIMIT' : ''}`);
+        lines.push(`  ${c.label}${st.phases ? ' ' + PHASE[c.phase - 1] : ''}  #${fixtureNums(doc, ids)}  ${typeSummary(doc, ids)}  ${W(c.load)}${noW(ids)}${c.over ? '  OVER LIMIT' : ''}`);
       }
     }
   });

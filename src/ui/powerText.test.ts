@@ -40,7 +40,7 @@ test('exact power list for a two-truss rig', () => {
     '',
     'LX2: 600 W',
     'Socapex A',
-    '  A1  #5–7  Aura ×2, Mystery  600 W',
+    '  A1  #5–7  Aura ×2, Mystery  600 W (1 with no wattage)',
     '',
     'Total 2,480 W (10.3 A at 240 V) on 2 circuits, 2 Socapex',
     '1 fixture with no wattage, counted as 0 W',
@@ -61,4 +61,8 @@ test('without unit numbers, Fixture IDs are listed (Vectorworks files often have
   for (const [id, fid] of [['F1', '923'], ['F2', '924'], ['F3', '925'], ['F4', 'A7']] as const) { const f = d.entities.get(id) as Fixture; f.unitNumber = null; f.fixtureId = fid; }
   expect(fixtureNums(d, ['F1', 'F2', 'F3'])).toBe('923–925');
   expect(fixtureNums(d, ['F3', 'F4'])).toBe('925, A7');
+});
+test('review fix: a circuit with no-wattage fixtures says so instead of passing as 0 W', () => {
+  const d = rig();
+  expect(powerText('Ford', rigPower(d), d)).toContain('  A1  #5–7  Aura ×2, Mystery  600 W (1 with no wattage)');
 });

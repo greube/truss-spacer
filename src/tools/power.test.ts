@@ -52,3 +52,27 @@ test('the overlay draws circuit labels without throwing', () => {
   drawPowerOverlay(ctx, app.camera, app.doc, rigPower(app.doc), () => true, 'dark');
   expect(calls).toContain('fillText');
 });
+
+test('review fix: labels show per fixture; one tight pair does not hide the rest of the run', () => {
+  const app = withType(500); const texts: string[] = [];
+  const ctx: any = new Proxy({}, { get: (o: any, k) => (k in o ? o[k] : k === 'measureText' ? () => ({ width: 20 }) : (...a: any[]) => { if (k === 'fillText') texts.push(a[0]); }), set: (o: any, k, v) => { o[k] = v; return true; } });
+  (app.doc.entities.get('F1') as Fixture).matrix.o.x = (app.doc.entities.get('F0') as Fixture).matrix.o.x; // stacked with F0
+  drawPowerOverlay(ctx, app.camera, app.doc, rigPower(app.doc), () => true, 'dark');
+  expect(texts.length).toBeGreaterThanOrEqual(5); // F2..F5 each, plus one combined label for the stacked pair
+});
+test('review fix: no-wattage fixtures keep a warning colour, and no circuit colour is near over-limit red', async () => {
+  const { NO_WATTS_COLOUR } = await import('../view/powerOverlay');
+  const app = withType(500); app.doc.types.set('q', { key: 'q', m: 'M', n: 'Q', w: null, src: null, url: '', gdtfSpec: '', mode: '', category: 'spot' });
+  (app.doc.entities.get('F3') as Fixture).typeKey = 'q';
+  expect(powerColours(rigPower(app.doc)).get('F3')).toBe(NO_WATTS_COLOUR);
+  const rgb = (h: string) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const [r0, g0, b0] = rgb(OVER_COLOUR);
+  for (const c of CIRCUIT_COLOURS) { const [r, g, b] = rgb(c); expect(Math.hypot(r - r0, g - g0, b - b0)).toBeGreaterThan(120); }
+});
+test('review fix: the power overlay uses dark label ink in Paper mode', () => {
+  const app = withType(500); const fills: string[] = [];
+  const ctx: any = new Proxy({}, { get: (o: any, k) => (k in o ? o[k] : k === 'measureText' ? () => ({ width: 20 }) : () => { if (k === 'fillText') fills.push(o.fillStyle); }), set: (o: any, k, v) => { o[k] = v; return true; } });
+  drawPowerOverlay(ctx, app.camera, app.doc, rigPower(app.doc), () => true, 'paper');
+  expect(fills.length).toBeGreaterThan(0);
+  for (const f of fills) expect(CIRCUIT_COLOURS as readonly string[]).not.toContain(f);
+});
