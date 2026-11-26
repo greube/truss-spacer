@@ -27,6 +27,10 @@ import { createJobs } from './ui/jobs';
 import { renderReview, renderPicker } from './ui/review';
 import { renderSpacingPanel } from './ui/spacingPanel';
 import type { SpacingState } from './ui/spacingPanel';
+import { buildRunPng } from './ui/plotPng';
+import { runSections, runLength, zeroAlong } from './domain/runMarks';
+import type { MarkRow } from './domain/runMarks';
+import type { Truss, TrussSpacing } from './core/model/types';
 import type { Doc } from './core/model/types';
 
 const THEME_KEY = 'trussCadTheme';
@@ -102,7 +106,7 @@ function describe(e: Entity): string {
 // Spacing panel: side column on a laptop, a bottom sheet on a phone
 const spState: SpacingState = { showSec: false, done: new Set(), sel: null, key: '' };
 let spSheet: { refresh(): void; close(): void } | null = null;
-const spHooks = { toast: (m: string, w?: boolean) => shell.toast(m, w), exportImage: (id: string, rows: any, st: any, showSec: boolean) => exportRunImage(id, rows, st, showSec) };
+const spHooks = { toast: (m: string, w?: boolean) => shell.toast(m, w), exportImage: (id: string, rows: MarkRow[], st: TrussSpacing, showSec: boolean) => { void exportRunImage(id, rows, st, showSec); } };
 function renderSpacing() {
   const id = active.id === 'spacing' ? spacingTool.current : null;
   shell.side.spacingSec.hidden = !id;
@@ -112,8 +116,26 @@ function renderSpacing() {
   if (!id && spSheet) { spSheet.close(); spSheet = null; }
 }
 spacingTool.onPick = () => { spState.sel = null; renderSpacing(); };
-// filled in by the plot image export (next task)
-let exportRunImage = (_id: string, _rows: unknown, _st: unknown, _showSec: boolean) => shell.toast('Image export comes next.');
+async function exportRunImage(id: string, rows: MarkRow[], st: TrussSpacing, showSec: boolean) {
+  const t = app.doc.entities.get(id) as Truss | undefined; if (!t) return;
+  const corners: number[] = []; let acc = 0; for (const l of t.legs.slice(0, -1)) { acc += Math.hypot(l.b.x - l.a.x, l.b.y - l.a.y); corners.push(acc); }
+  const blob = await buildRunPng({ name: t.name, jobName: shell.jobName.textContent ?? '', sections: runSections(t), corners, length: runLength(t), zero: zeroAlong(t, st),
+    rows, st, S: app.doc.settings, showSec, provisional: t.state === 'draft' });
+  if (!blob) { shell.toast("Couldn't draw the image.", true); return; }
+  const url = URL.createObjectURL(blob), name = `truss-plot-${t.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'truss'}.png`;
+  const file = new File([blob], name, { type: 'image/png' });
+  let canShare = false; try { canShare = typeof navigator.canShare === 'function' && typeof navigator.share === 'function' && navigator.canShare({ files: [file] }); } catch { /* not supported */ }
+  shell.openSheet('Plot image', el => {
+    const img = document.createElement('img'); img.src = url; img.alt = `Plot of ${t.name}`; img.style.cssText = 'display:block;width:100%;height:auto;background:#fff';
+    const save = document.createElement('button'); save.className = 'btn primary'; save.type = 'button'; save.textContent = 'Save PNG';
+    save.onclick = () => { const a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); shell.toast('Saved to your Downloads.'); };
+    const share = document.createElement('button'); share.className = 'btn'; share.type = 'button'; share.textContent = 'Share'; share.hidden = !canShare;
+    share.onclick = async () => { try { await navigator.share({ files: [file], title: t.name }); } catch (e) { if ((e as Error).name !== 'AbortError') shell.toast("Sharing didn't work. Save the PNG and send it from your gallery.", true); } };
+    const row = document.createElement('div'); row.className = 'body'; row.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap'; row.append(save, share);
+    const box = document.createElement('div'); box.style.cssText = 'overflow:auto;max-height:55vh'; box.append(img);
+    el.append(box, row);
+  }, () => URL.revokeObjectURL(url));
+}
 
 function renderPanels() {
   renderInfo();
