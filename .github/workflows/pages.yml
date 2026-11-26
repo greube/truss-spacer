@@ -1,7 +1,7 @@
 name: Deploy to GitHub Pages
 
-# Publishes the live app from main at /truss-spacer/ and, if the v2 branch exists,
-# a preview of it at /truss-spacer/v2/.
+# Publishes the live app from main at /truss-spacer/ and, if they exist, previews of the
+# v2 branch at /truss-spacer/v2/ and of the cad branch (the CAD rebuild, built with npm) at /truss-spacer/cad/.
 # A push to v2 runs the small "Preview v2" workflow on that branch, which triggers this one
 # here on main (workflow_run), so the deploy always runs from main and passes the Pages
 # environment's branch rule.
@@ -11,7 +11,7 @@ on:
     branches: [main]
   workflow_dispatch:
   workflow_run:
-    workflows: ["Preview v2"]
+    workflows: ["Preview v2", "Preview cad"]
     types: [completed]
 
 permissions:
@@ -47,6 +47,24 @@ jobs:
           ref: v2
           path: preview
 
+      - name: Check for a cad branch
+        id: cad
+        run: |
+          if git -C live ls-remote --exit-code --heads origin cad >/dev/null; then echo "exists=true" >> "$GITHUB_OUTPUT"; fi
+
+      - uses: actions/checkout@v4
+        if: steps.cad.outputs.exists == 'true'
+        with:
+          ref: cad
+          path: cadsrc
+
+      - uses: actions/setup-node@v4
+        if: steps.cad.outputs.exists == 'true'
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: cadsrc/package-lock.json
+
       # Publish only the app itself (not CLAUDE.md, README, tests etc.).
       # Stamp each service worker with its commit so phones pick up each deploy cleanly.
       - name: Assemble site
@@ -70,6 +88,18 @@ jobs:
             grep -q "Spacer v2</span>" _site/v2/index.html
           fi
           find _site -maxdepth 2 | sort
+
+      # The CAD preview is a TypeScript/Vite app: test and build it, then publish dist/ at /cad/
+      - name: Build CAD preview
+        if: steps.cad.outputs.exists == 'true'
+        working-directory: cadsrc
+        run: |
+          npm ci
+          npx vitest run
+          BUILD_ID=$(git rev-parse --short HEAD) npm run build
+          grep -q "const BUILD = \"$(git rev-parse --short HEAD)\";" dist/sw.js
+          mkdir -p ../_site/cad && cp -r dist/. ../_site/cad/
+          ls ../_site/cad
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
