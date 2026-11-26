@@ -2,7 +2,8 @@
    For a straight truss this gives exactly v1's marks (runMarks.test.ts checks it against recorded v1 cases). */
 import type { Truss, Fixture, TrussSpacing } from '../core/model/types';
 import type { V2, V3 } from '../core/geom/vec';
-import { rnd } from './spacing';
+import { rnd, fmt } from './spacing';
+import type { FmtSettings } from './spacing';
 
 export interface MarkRow { id: string; unit: number | null; s: number; mark: number; sec: number; off: number; near: boolean; gap: number | null; offLine: number | null; uneven: boolean }
 
@@ -72,4 +73,15 @@ export function runMarks(t: Truss, fixtures: Fixture[], st: TrussSpacing, fmt: {
     rows.forEach(r => { r.uneven = r.gap != null && Math.abs(r.gap - med) > UNEVEN; });
   }
   return rows;
+}
+
+/** A mark as shown in lists, copied text and on the plot: centre marks get an explicit + on the right (as v1). */
+export function markLabel(mark: number, st: TrussSpacing, S: FmtSettings): string {
+  return (st.ref === 'centre' && mark > 0 ? '+' : '') + fmt(mark, true, S);
+}
+
+/** Where 0 is along the run (distance from end A), for the plot. */
+export function zeroAlong(t: Truss, st: TrussSpacing): number {
+  const L = runLength(t), shift = st.offsetSide === 'after' ? st.offset : -st.offset;
+  return st.ref === 'a' ? -shift : st.ref === 'centre' ? L / 2 - shift : L;
 }

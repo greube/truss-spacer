@@ -12,6 +12,7 @@ import { RotateTool } from './tools/rotate';
 import { AddTrussTool } from './tools/addTruss';
 import { AddFixtureTool } from './tools/addFixture';
 import { MeasureTool } from './tools/measure';
+import { SpacingTool } from './tools/spacing';
 import { handleKey, undo, redo, zoomToFit, pruneSelection } from './app/actions';
 import { setSettings } from './core/commands/ops';
 import { fmt } from './domain/spacing';
@@ -37,12 +38,13 @@ const index = new GridIndex();
 const camera = new Camera();
 let hover: string | null = null;
 
-const tools: Record<string, Tool> = { select: new SelectTool(), rotate: new RotateTool(), addTruss: new AddTrussTool(), addFixture: new AddFixtureTool(), measure: new MeasureTool() };
+const spacingTool = new SpacingTool();
+const tools: Record<string, Tool> = { select: new SelectTool(), rotate: new RotateTool(), addTruss: new AddTrussTool(), addFixture: new AddFixtureTool(), measure: new MeasureTool(), spacing: spacingTool };
 let active: Tool = tools.select;
 
 const shell = buildShell(document.getElementById('app')!, [
   { id: 'select', icon: '↖', label: 'Select' }, { id: 'rotate', icon: '⟲', label: 'Rotate' }, { id: 'addTruss', icon: '▭', label: 'Truss' },
-  { id: 'addFixture', icon: '◉', label: 'Fixture' }, { id: 'measure', icon: '⇹', label: 'Measure' },
+  { id: 'addFixture', icon: '◉', label: 'Fixture' }, { id: 'spacing', icon: '⇔', label: 'Spacing' }, { id: 'measure', icon: '⇹', label: 'Measure' },
 ], { id: 'more', icon: '⋯', label: 'More' }, id => app.setTool(id), () => openMore());
 
 export const hooks = {

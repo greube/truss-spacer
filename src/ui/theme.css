@@ -86,7 +86,7 @@ button{cursor:pointer}
   .brand,.lap{display:none}
   .top{gap:4px}
   .top .ib{min-width:40px;padding:0 6px}
-  .tools{grid-area:tools;display:grid;grid-template-columns:repeat(6,1fr);gap:4px;padding:6px max(6px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));
+  .tools{grid-area:tools;display:grid;grid-template-columns:repeat(7,1fr);gap:3px;padding:6px max(6px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));
     background:var(--panel);border-top:1px solid var(--line)}
   .tools .ib{width:100%;min-height:52px;flex-direction:column;display:flex;align-items:center;justify-content:center;gap:2px;font-size:11px;padding:4px 2px}
   .tools .ib i{font-style:normal;font-size:19px;line-height:1}
