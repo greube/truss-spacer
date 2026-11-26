@@ -14,7 +14,7 @@ const curated = (t: DbType) => t.src === 's' || t.src === 'l' || t.src === 'm';
  * Custom/Generic/blank manufacturers are matched on the fixture name and are never "matched".
  */
 export function matchType(t: FixtureType, fixtureName = ''): { status: 'matched' | 'uncertain' | 'unknown'; candidates: DbType[] } {
-  const loose = !t.m || /^(custom|generic)$/i.test(t.m);
+  const loose = !t.m || /^(custom|generic)$/i.test(t.m) || /^custom@/i.test(t.key);
   if (loose) {
     const q = fixtureName || t.n.replace(/_/g, ' ');
     let cands = search(q, 5);

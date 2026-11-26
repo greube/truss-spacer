@@ -37,6 +37,14 @@ describe('importMvr', () => {
     const { doc } = await imp(await makeMvr({ fixtures: [{ uuid: 'N', name: 'House light', spec: '' }] }));
     expect(fixtures(doc)[0].typeKey).toBe('name:House light');
   });
+  test('unit number 0 means none (Vectorworks writes 0 when unset)', async () => {
+    const { doc } = await imp(await makeMvr({ fixtures: [{ uuid: 'U0', unit: 0 }, { uuid: 'U5', unit: 5 }] }));
+    expect((doc.entities.get('U0') as Fixture).unitNumber).toBeNull(); expect((doc.entities.get('U5') as Fixture).unitNumber).toBe(5);
+  });
+  test('Custom@ types are named after the fixture', async () => {
+    const { doc } = await imp(await makeMvr({ fixtures: [{ uuid: 'C', name: 'ShowPro CYC RGBW', spec: 'Custom@Light_Instr_ShowPro_CYC_RGBW.gdtf' }] }));
+    expect(doc.types.get('Custom@Light_Instr_ShowPro_CYC_RGBW')).toMatchObject({ m: '', n: 'ShowPro CYC RGBW' });
+  });
   test('trusses and reference objects get their size from the 3D models', async () => {
     const { doc } = await imp(await makeMvr({
       symdefs: [{ uuid: 'SD', name: 'Box 3m', glbs: ['t.glb'] }, { uuid: 'TW', name: 'Tower', glbs: ['tw.glb'] }],

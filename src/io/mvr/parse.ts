@@ -78,7 +78,10 @@ export function parseScene(dom: Document, files: Map<string, Uint8Array>): { doc
     const key = spec ? spec.replace(/\.gdtf$/i, '') : 'name:' + (el.getAttribute('name') ?? '');
     if (!doc.types.has(key)) {
       const at = key.startsWith('name:') ? -1 : key.indexOf('@');
-      const t: FixtureType = { key, m: at > 0 ? key.slice(0, at) : '', n: at > 0 ? key.slice(at + 1) : key.replace(/^name:/, ''), w: null, src: null, url: '',
+      let m = at > 0 ? key.slice(0, at) : '', n = at > 0 ? key.slice(at + 1) : key.replace(/^name:/, '');
+      // "Custom@Light_Instr_..." is a Vectorworks-made profile: the fixture's own name reads better
+      if (/^custom$/i.test(m)) { m = ''; n = (el.getAttribute('name') ?? '').trim() || n.replace(/_/g, ' '); }
+      const t: FixtureType = { key, m, n, w: null, src: null, url: '',
         gdtfSpec: spec, mode: text(el, 'GDTFMode'), category: 'generic' };
       doc.types.set(key, t);
     }
@@ -105,7 +108,7 @@ export function parseScene(dom: Document, files: Map<string, Uint8Array>): { doc
         if (!hasM) noMatrix++;
         const unit = parseInt(text(el, 'UnitNumber'), 10);
         const f: Fixture = { id, kind: 'fixture', name, layerId, classId, positionId: text(el, 'Position') || null, trussId: null, matrix: m,
-          typeKey: typeOf(el), unitNumber: Number.isFinite(unit) ? unit : null, fixtureId: text(el, 'FixtureID'), address: address(el), mvrUuid: id };
+          typeKey: typeOf(el), unitNumber: Number.isFinite(unit) && unit > 0 ? unit : null, fixtureId: text(el, 'FixtureID'), address: address(el), mvrUuid: id };
         doc.entities.set(id, f);
       } else if (el.tagName === 'Truss') {
         if (!hasM) noMatrix++;

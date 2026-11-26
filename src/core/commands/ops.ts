@@ -126,3 +126,13 @@ export function layerForNew(history: { exec(c: Command): void; doc: Doc }, prefe
   if (d.layers.length) return d.layers[0].id;
   const id = newId(); history.exec(addLayer({ id, name: 'Plot', visible: true })); return id;
 }
+
+/** Changes job settings (units, labels and so on) as an undoable step. */
+export function setSettings(patch: Partial<Doc['settings']>): Command {
+  let old: Partial<Doc['settings']> | null = null;
+  return {
+    label: 'Settings',
+    do(d) { if (!old) old = Object.fromEntries(Object.keys(patch).map(k => [k, structuredClone((d.settings as any)[k])])); Object.assign(d.settings, structuredClone(patch)); },
+    undo(d) { if (old) Object.assign(d.settings, structuredClone(old)); },
+  };
+}
