@@ -44,7 +44,7 @@ for (const [name, opts] of [['phone', { viewport: { width: 412, height: 860 }, h
   check('opens the sample in under 5 s', ms < 5000, `${Math.round(ms)} ms`);
   check('188 fixtures and 9 hanging positions', d0.fixtures === 188 && d0.positions === 9, JSON.stringify(d0));
   check('draft trusses on the flown positions', d0.drafts === 6, `${d0.drafts} drafts`);
-  if (!touch) check('positions panel lists 9', (await p.$$eval('.side .sec:nth-child(2) .item', x => x.length)) === 9);
+  if (!touch) check('positions panel lists 9', (await p.$$eval('.side .sec:has(h3:text("Hanging positions")) .item', x => x.length)) === 9);
   if (SHOTS) await p.screenshot({ path: `${SHOTS}/m1-${name}-plan.png` });
 
   // zoom and pan
