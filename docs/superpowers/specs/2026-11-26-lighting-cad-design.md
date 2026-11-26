@@ -1,7 +1,6 @@
 # Lighting CAD (Truss Spacer rebuild): design
 
-Status: draft for the owner's approval, 26 Nov 2026. Branch: `cad`.
-Open questions with the owner: spacing on an LD's rig (marks for existing positions vs re-spacing, and how truss ends are confirmed), whether L-shaped positions are one truss or several, and who receives exported MVRs (what new objects to write).
+Status: for the owner's approval, 26 Nov 2026. Branch: `cad`.
 
 ## 1. Intent
 
@@ -26,7 +25,7 @@ It must work on a **phone** (Android, at the bump-in, in dim venues) and a **lap
 - Navigate big plots smoothly on a mid-range Android phone and on a laptop.
 - Select and edit like CAD: move, rotate, duplicate, delete, and add trusses and fixtures, with snapping, typed exact values and unlimited undo/redo.
 - Run specialist tools on what's selected:
-  - **spacing** (the v1/v2 maths, including end gaps, centred and offsets)
+  - **spacing**. The main job is **tape marks for where the LD put each fixture**: measured from the truss end, centre or the user's own 0, with offsets, section numbers and join warnings. The backup is **re-spacing evenly** with the v1/v2 options (end gaps, centred, fixed gap), which moves the fixtures.
   - **power** (circuits and Socapex, from v2)
   - **cabling** (DMX runs and lengths)
 - Export MVR that round-trips back to Vectorworks or a console without losing anything we didn't intend to change.
@@ -104,7 +103,7 @@ The owner picked **A**, with the model kept 3D and the renderer separate so a 3D
 
 1. **Model** (`core/model`): plain data, no DOM.
    - **Entities**:
-     - `Truss`: a line or polyline in 3D, with a section list, truss type (box size) and trim height.
+     - `Truss`: a **run**, a polyline in 3D that can go round corners, with a section list per leg, truss type (box size), trim height and a confirmed or draft state. Spacing measures along the run. Power and DMX treat one run as one truss: one Socapex run (more if needed) and one daisy-chain going round the corners.
      - `Fixture`: position and rotation matrix, type ref, unit number, fixture ID, address, hanging position, plus the v2 data (circuit, DMX link).
      - `HangingPosition`, `Layer` and `Class`.
      - `RefObject`: imported scene objects shown as reference geometry.
@@ -141,11 +140,18 @@ The owner picked **A**, with the model kept 3D and the renderer separate so a 3D
      - Keep the original archive and XML DOM.
      - For reference geometry, read each glb's bounding box (from accessor min/max, without loading meshes) and draw a top-down outline. Simple projected outlines can come later.
    - **Truss inference**: for hanging positions with fixtures but no `Truss` objects, fit a line, or a polyline for L shapes, through the fixtures. Then create a **draft truss**, clearly marked as inferred, that the user confirms or edits: sections from their stock, truss type, length.
+     - **Corners**: a hanging position becomes one run that goes round its corners, unless that doesn't make sense: legs that don't meet (an end gap of more than about 1 m between legs, or legs at different heights) become separate runs. The user can always **split** a run at a corner or **join** two runs that meet. Thresholds are the builder's call.
+     - **Confirming ends**: the MVR shows where fixtures are, not where the truss ends. A draft starts with its ends a default distance past the outer fixtures (builder's call, shown clearly). The user confirms by entering the sections (as `3+3+2`, from their stock) and where the truss starts: drag or snap an end, or type the distance from the first fixture to the end. **Marks from a draft truss are shown as provisional** (styled differently, with a "confirm truss" prompt) and are never presented as final.
      - Real `Truss` objects get their length from their symbol or glb bounding box.
      - Vertical towers are shown as towers (a box in plan).
    - **MVR export (round trip)**:
      - Start from the **original XML DOM and archive**. Change only the nodes for entities the user changed, matched by uuid. Add new entities as new nodes in a suitable layer. Remove deleted ones.
      - Keep every unknown node and attribute, plus GDTF files, glbs and `UserData`, byte for byte where untouched.
+     - **Exports go to both LDs (back into Vectorworks) and consoles**, so every export must work for both:
+       - **Confirmed trusses** are written as real `Truss` objects with simple generated geometry: a box-truss glb sized to the truss type and length, plus a name, class and hanging position. That way Vectorworks and visualisers show them. **Draft trusses are not exported.**
+       - **Fixtures** keep or update their position, rotation, unit number, fixture ID, address and hanging position, which is what consoles need.
+       - **Added fixtures** reuse a GDTF file already in the archive when the type matches. If none exists (a database-only type), the fixture is still exported (position, name, address), and the export summary **warns** that it has no GDTF, because a console may need one.
+       - The export shows a short summary first: what changed, what was added or removed, and any warnings.
      - Rezip with `CompressionStream`.
      - New jobs (no original) export a clean MVR.
    - **Jobs**: IndexedDB stores the model, history, original MVR blob and settings. Export and import of a job file for sharing.
@@ -213,7 +219,10 @@ Each milestone ships to `/truss-spacer/cad/` and is usable on its own.
    - Panning and zooming are smooth.
    - A truss can be moved with its fixtures and undone.
    - Nothing about the job is lost after closing and reopening offline.
-2. **Spacing tool**: select a truss (or hanging position), then space its fixtures using the v1/v2 options, including end gaps, centred, fixed gap, the left and centre offsets, and join warnings. Fixtures move on the plot as one undoable command. The marks list and plot export (PNG) work as in v1.
+2. **Spacing tool**: select a truss run (or hanging position) and confirm its sections and ends.
+   - **Main mode: marks for the LD's positions.** A marks list of each fixture's distance along the run from the left end, the centre or the user's own 0 (with the v1 offsets), plus section number and in-section distance, join warnings, and a flag where the LD's spacing is uneven.
+   - **Backup: re-space evenly** with the v1/v2 options (end gaps, centred, fixed gap). This moves fixtures on the plot as one undoable command.
+   - Tick-off marks list, copy and plot export (PNG) as in v1.
 3. **Power tool**: types and wattages from the review, circuits and Socapex per truss (v2 rules), shown on the plot (circuit labels and colours), plus the power sheet and Copy power.
 4. **Cabling tool**: DMX daisy-chain per truss from a chosen end. Jumper = gap + 2 × truss depth + 0.5 m, rounded up to stock lengths (1, 2, 3, 5, 10, 20, 50 m). Drawn on the plot, with a cable pull list. *Drop cables from the deck are out of scope, per the owner.*
 5. **Output**: MVR export (round trip), a scaled PDF plot with title block, and the paperwork pack.
@@ -235,14 +244,19 @@ Each milestone ships to `/truss-spacer/cad/` and is usable on its own.
 - MVR import and export are important. Rigs mainly come from Vectorworks.
 - Should grow toward fuller CAD; choose what's robust for editing and adding.
 - Approach A.
-- Earlier decisions that still apply: 80% of 2400 W default circuit limit (adjustable), neighbouring fixtures share circuits, one Socapex run per truss (more if needed), optional phase balancing, DMX daisy-chain per truss with "truss height + 0.5 m, next size up" slack, stock lengths 1/2/3/5/10/20/50 m, no drop cables, even spacing by default (ask when the plot is uneven), in-section distances off by default and not remembered, and the curated wattage database with its exclusions.
+- **Spacing**: the main job is marks for where the LD put the fixtures; re-spacing evenly is the backup.
+- **Corners**: a run goes round corners (one truss for spacing, power and DMX) unless it doesn't make sense to.
+- **Exported MVRs go to both LDs and consoles.**
+- Earlier decisions that still apply: 80% of 2400 W default circuit limit (adjustable), neighbouring fixtures share circuits, one Socapex run per truss (more if needed), optional phase balancing, DMX daisy-chain per truss with "truss height + 0.5 m, next size up" slack, stock lengths 1/2/3/5/10/20/50 m, no drop cables, in-section distances off by default and not remembered, and the curated wattage database with its exclusions.
 
 ## 11. Calls made by the designer (the owner can override)
 
 - Build on a new `cad` branch in this repo, previewed at `/truss-spacer/cad/`. v1 (main) and the v2 preview stay as they are. When the CAD is ready, it replaces v1 on `main`, with migration of v2 jobs if wanted.
 - TypeScript plus Vite build step, IndexedDB for jobs.
 - Our own 2D fixture symbols by category. MVR carries no 2D symbols, and GDTF 3D models are too heavy to draw in plan on phones.
-- Inferred trusses are drafts until confirmed.
+- Inferred trusses are drafts until confirmed. Marks from drafts are shown as provisional, and drafts are not exported.
+- Confirmed trusses are exported with simple generated box geometry. Fixtures with no GDTF are exported with a warning.
+- Legs that don't meet (about 1 m apart, or at different heights) become separate runs; the user can split or join.
 - Milestone 1 includes basic editing (owner's "robust for editing" steer), not just viewing.
 - **v2 is frozen as a reference.** No more stages are built on `v2`. DMX cabling (v2's planned stage 3) is built in the CAD as milestone 4. The port source for `spacing`, `power` and the fixture database is the `v2` branch as it stands (commit 404a379 or later).
 - **Export fidelity**: archive members we didn't change (GDTF, glb, PNG and so on) are copied byte for byte. `GeneralSceneDescription.xml` is re-serialised from the original DOM with only our changes applied. Whitespace and attribute-quote normalisation are acceptable; changing or dropping any element, attribute or text we didn't edit is not.
