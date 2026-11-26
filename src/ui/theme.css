@@ -76,7 +76,7 @@ button{cursor:pointer}
 .sheet .head h2{margin:0;font:600 20px var(--f-display);text-transform:uppercase;letter-spacing:.03em}
 .sheet .content{overflow:auto;-webkit-overflow-scrolling:touch}
 @media (min-width:900px){.sheet{justify-content:center;align-items:center}.sheet .box{width:min(560px,92vw);border-radius:12px;border:1px solid var(--line);max-height:86vh}}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(120px + env(safe-area-inset-bottom));z-index:40;background:var(--panel2);border:1px solid var(--line);
+.toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top));z-index:40;background:var(--panel2);border:1px solid var(--line);
   border-radius:10px;padding:10px 14px;max-width:min(92vw,520px);box-shadow:0 8px 24px rgba(0,0,0,.35);font-size:14px}
 .toast.warn{border-color:var(--warn);color:var(--warn)}
 

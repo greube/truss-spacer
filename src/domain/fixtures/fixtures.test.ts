@@ -34,6 +34,9 @@ describe('matching imported types', () => {
   });
   test('prefers a curated spec-sheet figure', () => { expect(matchType(t('Clay Paky', 'Sharpy')).candidates[0]).toMatchObject({ w: 350, src: 's' }); });
   test('an unknown fixture is unknown', () => { expect(matchType(t('Silver Star', 'Pluto 2000')).status).toBe('unknown'); });
+  test('a Custom type with no close name match is unknown, not a loose guess', () => {
+    expect(matchType(t('Custom', 'Light_Instr_ShowPro_CYC_RGBW'), 'ShowPro CYC RGBW')).toMatchObject({ status: 'unknown', candidates: [] });
+  });
   test('Custom types match on the fixture name, and are never sure', () => {
     expect(matchType(t('Custom', 'Light_Instr_ShowPro_CYC_RGBW'), 'ShowPro CYC RGBW').status).not.toBe('matched');
   });

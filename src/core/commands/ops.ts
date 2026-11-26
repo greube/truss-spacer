@@ -136,3 +136,13 @@ export function setSettings(patch: Partial<Doc['settings']>): Command {
     undo(d) { if (old) Object.assign(d.settings, structuredClone(old)); },
   };
 }
+
+/** Changes a fixture type for the whole job (e.g. its wattage), undoably. */
+export function updateType(key: string, patch: Partial<FixtureType>): Command {
+  let old: FixtureType | null = null;
+  return {
+    label: 'Fixture type',
+    do(d) { const t = d.types.get(key); if (!t) return; if (!old) old = clone(t); d.types.set(key, { ...t, ...clone(patch), key }); },
+    undo(d) { if (old) d.types.set(key, clone(old)); },
+  };
+}

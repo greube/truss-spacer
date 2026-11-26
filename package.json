@@ -13,6 +13,7 @@
   "devDependencies": {
     "@types/node": "22.20.7",
     "@xmldom/xmldom": "0.9.12",
+    "fake-indexeddb": "6.2.8",
     "typescript": "7.0.2",
     "vite": "8.4.0",
     "vitest": "5.1.2"

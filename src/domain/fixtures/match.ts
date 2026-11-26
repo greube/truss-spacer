@@ -17,8 +17,8 @@ export function matchType(t: FixtureType, fixtureName = ''): { status: 'matched'
   const loose = !t.m || /^(custom|generic)$/i.test(t.m) || /^custom@/i.test(t.key);
   if (loose) {
     const q = fixtureName || t.n.replace(/_/g, ' ');
-    let cands = search(q, 5);
-    if (!cands.length) { const words = norm(q).split(' ').filter(w => w.length > 2); for (const w of words) { cands = search(w, 5); if (cands.length) break; } }
+    // every word must match; suggesting loosely related fixtures here does more harm than good
+    const cands = search(q, 5);
     return { status: cands.length ? 'uncertain' : 'unknown', candidates: cands };
   }
   const man = compact(t.m), model = compact(t.n), modelWords = norm(t.n).split(' ').length;

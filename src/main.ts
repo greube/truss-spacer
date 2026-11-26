@@ -21,9 +21,10 @@ import { renderObjectInfo } from './ui/objectInfo';
 import { renderLayers } from './ui/layers';
 import { renderPositions } from './ui/positions';
 import { renderHelp } from './ui/help';
-import { importMvr } from './io/mvr/import';
-import { inferCommand } from './io/mvr/infer';
 import { label as typeLabel } from './domain/fixtures/db';
+import { createJobs } from './ui/jobs';
+import { renderReview, renderPicker } from './ui/review';
+import type { Doc } from './core/model/types';
 
 const THEME_KEY = 'trussCadTheme';
 let theme: 'dark' | 'paper' = 'dark';
@@ -45,8 +46,8 @@ const shell = buildShell(document.getElementById('app')!, [
 ], { id: 'more', icon: '⋯', label: 'More' }, id => app.setTool(id), () => openMore());
 
 export const hooks = {
-  openTypePicker: (_ids: string[]) => shell.toast('Fixture types are chosen in the review (next step).'),
-  afterChange: () => {},
+  openTypePicker: (ids: string[]) => openPicker(ids),
+  afterChange: () => jobs.autosave(),
 };
 
 const app: AppCtx = {
@@ -158,19 +159,23 @@ function resize() { renderer.resize(); renderer.draw(); }
 new ResizeObserver(resize).observe(shell.stage);
 window.addEventListener('orientationchange', () => setTimeout(resize, 150));
 
-/** Opens an MVR into the current session (the full job flow comes with the job menu). */
-async function importBuffer(buf: ArrayBuffer, name = 'Imported rig'): Promise<{ warnings: string[] }> {
-  const r = await importMvr(buf);
-  app.doc = r.doc; history.reset(r.doc); app.selection.clear();
-  index.rebuild(r.doc);
-  const inf = inferCommand(r.doc);
-  if (inf.command) history.exec(inf.command);
-  shell.jobName.textContent = name;
+/** Shows a document (a newly opened or imported job): fresh undo history, zoomed to fit. */
+function setDoc(d: Doc, name: string) {
+  active.onDragCancel?.();
+  app.doc = d; history.reset(d); app.selection.clear(); index.rebuild(d);
+  shell.jobName.textContent = name; lastSel = '\0';
   renderPanels(); renderer.resize(); zoomToFit(app);
-  return { warnings: [...r.warnings, ...inf.warnings] };
 }
+let reviewSheet: { refresh(): void; close(): void } | null = null;
+function openReview() { reviewSheet = shell.openSheet('Fixture types', el => renderReview(el, app, openPicker), () => { reviewSheet = null; }); }
+function openPicker(ids: string[]) {
+  const s = shell.openSheet('Choose fixture type', el => renderPicker(el, app, ids, () => { s.close(); reviewSheet?.refresh(); }));
+}
+const jobs = createJobs({ app, shell, setDoc, openReview });
+shell.jobBtn.onclick = () => jobs.openSheet();
 
 app.setTool('select');
 renderPanels(); resize();
+void jobs.startup();
 // For automated tests and debugging
-(window as any).__cad = { app, importBuffer, renderer, shell };
+(window as any).__cad = { app, jobs, renderer, shell, importBuffer: (buf: ArrayBuffer, name = 'Imported rig.mvr') => jobs.importFile(new Blob([buf]), name) };
