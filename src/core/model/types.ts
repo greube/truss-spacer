@@ -19,9 +19,21 @@ export interface FixtureType {
 /** One straight piece of a truss run, in mm. sections: piece lengths in mm, empty = not set. */
 export interface Leg { a: V3; b: V3; sections: number[] }
 
+/**
+ * How a truss is measured and re-spaced (all lengths mm). ref: which end (A = first leg's start, B = last leg's end)
+ * or the centre is 0. offset moves 0 off that point: offsetSide 'after' = the truss sits beyond the user's 0
+ * (marks get bigger), like v1's "Right". mode/inset/insetB/diffEnds/gap are the v1 re-space options.
+ */
+export interface TrussSpacing {
+  ref: 'a' | 'centre' | 'b'; offset: number; offsetSide: 'before' | 'after'; joinWarn: number;
+  mode: 'edge' | 'equal' | 'cells' | 'fixed'; inset: number; insetB: number; diffEnds: boolean; gap: number;
+}
+export const DEFAULT_SPACING: TrussSpacing = { ref: 'a', offset: 0, offsetSide: 'after', joinWarn: 100, mode: 'edge', inset: 250, insetB: 250, diffEnds: false, gap: 1200 };
+
 export interface Truss {
   id: Id; kind: 'truss'; name: string; layerId: Id; classId: Id | null; positionId: Id | null;
   legs: Leg[]; boxSize: number; state: 'draft' | 'confirmed' | 'imported'; mvrUuid: Id | null;
+  spacing?: TrussSpacing;
 }
 
 export interface Fixture {

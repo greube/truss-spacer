@@ -87,3 +87,20 @@ describe('behaviour', () => {
     expect(b.min.x).toBeLessThanOrEqual(0); expect(b.max.x).toBeGreaterThanOrEqual(8000);
   });
 });
+
+describe('per-truss spacing settings', () => {
+  test('round trip through saving, and bad values fall back to defaults', async () => {
+    const { DEFAULT_SPACING } = await import('../model/types');
+    const { doc, truss } = rig();
+    (doc.entities.get(truss.id) as Truss).spacing = { ...DEFAULT_SPACING, ref: 'centre', offset: 500, offsetSide: 'before', mode: 'fixed', gap: 1500 };
+    const back = docFromJSON(JSON.parse(JSON.stringify(docToJSON(doc))));
+    expect((back.entities.get(truss.id) as Truss).spacing).toEqual({ ...DEFAULT_SPACING, ref: 'centre', offset: 500, offsetSide: 'before', mode: 'fixed', gap: 1500 });
+    const junk = JSON.parse(JSON.stringify(docToJSON(doc))); junk.entities.find((e: any) => e.id === truss.id).spacing = { ref: 'sideways', offset: 'x', gap: -5 };
+    const s = (docFromJSON(junk).entities.get(truss.id) as Truss).spacing!;
+    expect(s.ref).toBe('a'); expect(s.offset).toBe(0); expect(s.gap).toBe(DEFAULT_SPACING.gap);
+  });
+  test('trusses without settings stay without (defaults apply when used)', () => {
+    const { doc, truss } = rig();
+    expect((docFromJSON(JSON.parse(JSON.stringify(docToJSON(doc)))).entities.get(truss.id) as Truss).spacing).toBeUndefined();
+  });
+});

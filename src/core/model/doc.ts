@@ -1,4 +1,5 @@
-import type { Doc, Entity, Bounds, Fixture, Truss, RefObject, FixtureType, Layer, MvrClass, HangingPosition, Category } from './types';
+import type { Doc, Entity, Bounds, Fixture, Truss, RefObject, FixtureType, Layer, MvrClass, HangingPosition, Category, TrussSpacing } from './types';
+import { DEFAULT_SPACING } from './types';
 import type { Mat } from '../geom/matrix';
 import { IDENTITY } from '../geom/matrix';
 
@@ -27,6 +28,15 @@ const v3 = (p: any) => isObj(p) && num(p.x) && num(p.y) && num(p.z);
 const mat = (m: any): m is Mat => isObj(m) && v3(m.u) && v3(m.v) && v3(m.w) && v3(m.o);
 const CATS: Category[] = ['spot', 'wash', 'beam', 'profile', 'par', 'strip', 'strobe', 'effect', 'generic'];
 
+function cleanSpacing(s: any): TrussSpacing {
+  const d = DEFAULT_SPACING, pos = (v: any, dv: number) => (num(v) && v >= 0 ? v : dv);
+  return {
+    ref: ['a', 'centre', 'b'].includes(s.ref) ? s.ref : d.ref, offset: pos(s.offset, d.offset), offsetSide: s.offsetSide === 'before' ? 'before' : 'after',
+    joinWarn: pos(s.joinWarn, d.joinWarn), mode: ['edge', 'equal', 'cells', 'fixed'].includes(s.mode) ? s.mode : d.mode,
+    inset: pos(s.inset, d.inset), insetB: pos(s.insetB, d.insetB), diffEnds: !!s.diffEnds, gap: num(s.gap) && s.gap > 0 ? s.gap : d.gap,
+  };
+}
+
 function cleanEntity(e: any): Entity | null {
   if (!isObj(e) || !str(e.id) || !str(e.layerId)) return null;
   const base = { id: e.id, name: str(e.name) ? e.name : '', layerId: e.layerId, classId: str(e.classId) ? e.classId : null };
@@ -43,6 +53,7 @@ function cleanEntity(e: any): Entity | null {
       legs: e.legs.map((l: any) => ({ a: l.a, b: l.b, sections: Array.isArray(l.sections) ? l.sections.filter(num) : [] })),
       boxSize: num(e.boxSize) ? e.boxSize : 300, state: ['draft', 'confirmed', 'imported'].includes(e.state) ? e.state : 'draft',
       mvrUuid: str(e.mvrUuid) ? e.mvrUuid : null };
+    if (isObj(e.spacing)) t.spacing = cleanSpacing(e.spacing);
     return t;
   }
   if (e.kind === 'ref') {
