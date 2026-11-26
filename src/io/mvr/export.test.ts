@@ -131,3 +131,44 @@ test.skipIf(!SAMPLE)('the real Vectorworks MVR round-trips: unchanged members id
   const back = await reimport(r.bytes);
   expect(back.entities.size).toBe(doc.entities.size);
 }, 30000);
+
+describe('MVR export review fixes', () => {
+  test('Swap A/B on an imported truss changes nothing in the export', async () => {
+    const { orig, doc } = await load();
+    const t = doc.entities.get('T1') as Truss;
+    t.legs = t.legs.slice().reverse().map(l => ({ a: { ...l.b }, b: { ...l.a }, sections: l.sections.slice().reverse() }));
+    const r = await out(doc, orig);
+    expect(matrixOf(r.xml, 'T1')).toBe(matrixOf(XML, 'T1'));
+    expect(matrixOf(r.xml, 'F1')).toBe(matrixOf(XML, 'F1'));
+  });
+  test('type changes keep GDTFSpec and GDTFMode, with a share-style name for database and name-only types', async () => {
+    const { orig, doc } = await load();
+    doc.types.set('ofl:robe/megapointe', { key: 'ofl:robe/megapointe', m: 'Robe', n: 'MegaPointe', w: 470, src: 'o', url: '', gdtfSpec: '', mode: '', category: 'spot' });
+    doc.types.set('name:Par', { key: 'name:Par', m: '', n: 'Par', w: 300, src: 'j', url: '', gdtfSpec: '', mode: '', category: 'par' });
+    (doc.entities.get('F2') as Fixture).typeKey = 'ofl:robe/megapointe';
+    (doc.entities.get('F3') as Fixture).typeKey = 'name:Par';
+    const r = await out(doc, orig);
+    const node = (id: string) => r.xml.match(new RegExp(`<Fixture uuid="${id}"[\\s\\S]*?</Fixture>`))![0];
+    expect(node('F2')).toContain('<GDTFSpec>Robe@MegaPointe.gdtf</GDTFSpec>');
+    expect(node('F2')).toMatch(/<GDTFMode\s*\/>|<GDTFMode><\/GDTFMode>/);
+    expect(node('F3')).toContain('<GDTFSpec>Par.gdtf</GDTFSpec>');
+    expect(r.warnings.join(' ')).toMatch(/No GDTF file/);
+  });
+  test('a new fixture with no Fixture ID keeps an empty FixtureID, and re-imports with none', async () => {
+    const { orig, doc } = await load();
+    doc.entities.set('NEW2', { id: 'NEW2', kind: 'fixture', name: 'N', layerId: 'L1', classId: null, positionId: null, trussId: null, matrix: IDENTITY, typeKey: 'Robe@Spot', unitNumber: null, fixtureId: '', address: null, mvrUuid: null });
+    const r = await out(doc, orig);
+    expect(r.xml).toMatch(/uuid="NEW2"[\s\S]*?<FixtureID\s*\/>|uuid="NEW2"[\s\S]*?<FixtureID><\/FixtureID>/);
+    expect((await reimport(r.bytes)).entities.get('NEW2')).toMatchObject({ fixtureId: '', unitNumber: null });
+  });
+  test('new truss legs get the same uuids on every export, and a Geometries element', async () => {
+    const { orig, doc } = await load();
+    doc.entities.set('C3', { id: 'C3', kind: 'truss', name: 'C3', layerId: 'L1', classId: null, positionId: null, legs: [
+      { a: { x: 0, y: 9000, z: 7000 }, b: { x: 4000, y: 9000, z: 7000 }, sections: [] }, { a: { x: 4000, y: 9000, z: 7000 }, b: { x: 4000, y: 12000, z: 7000 }, sections: [] }], boxSize: 300, state: 'confirmed', mvrUuid: null } as Truss);
+    const ids = (x: string) => [...x.matchAll(/<Truss uuid="([^"]+)" name="C3/g)].map(m => m[1]);
+    const a = ids((await out(doc, orig)).xml), b = ids((await out(doc, orig)).xml);
+    expect(a.length).toBe(2); expect(a).toEqual(b);
+    expect(a[1]).toMatch(/^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/);
+    expect((await out(doc, orig)).xml).toMatch(/name="C3 leg 2"[\s\S]*?<Geometries\s*\/>/);
+  });
+});

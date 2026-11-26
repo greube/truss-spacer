@@ -36,12 +36,14 @@ export async function exportMvr(doc: Doc, original: Uint8Array | null, deps: Exp
     const e = dom.createElement(tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
     if (text != null) e.appendChild(dom.createTextNode(text)); return e;
   };
-  const setText = (parent: Element, tag: string, value: string | null) => {
+  /** Sets a child element's text; empty removes it, unless keep (elements the MVR spec requires stay, empty). */
+  const setText = (parent: Element, tag: string, value: string | null, keep = false) => {
     let c = child(parent, tag);
-    if (value == null || value === '') { if (c) parent.removeChild(c); return; }
+    if ((value == null || value === '') && !keep) { if (c) parent.removeChild(c); return; }
+    value = value ?? '';
     if (!c) { c = el(tag); parent.appendChild(c); }
     while (c.firstChild) c.removeChild(c.firstChild);
-    c.appendChild(dom.createTextNode(value));
+    if (value) c.appendChild(dom.createTextNode(value));
   };
   const setMatrix = (node: Element, local: Mat) => {
     let m = child(node, 'Matrix');
@@ -49,17 +51,25 @@ export async function exportMvr(doc: Doc, original: Uint8Array | null, deps: Exp
     while (m.firstChild) m.removeChild(m.firstChild);
     m.appendChild(dom.createTextNode(formatMvrMatrix(local)));
   };
-  const typeSpec = (key: string) => { const t = doc.types.get(key); return { spec: key.startsWith('name:') ? '' : t?.gdtfSpec || key + '.gdtf', mode: t?.mode ?? '' }; };
+  // GDTF file name for a type: its own, a GDTF-style key (Maker@Model), or a share-style name made from it
+  const clean = (x: string) => x.replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const typeSpec = (key: string) => {
+    const t = doc.types.get(key);
+    if (t?.gdtfSpec) return { spec: t.gdtfSpec, mode: t.mode ?? '' };
+    if (/^[^:/\\]+@[^:/\\]+$/.test(key)) return { spec: key + '.gdtf', mode: t?.mode ?? '' };
+    const m = clean(t?.m ?? ''), n = clean(t?.n ?? key.replace(/^[a-z]+:/i, '')) || 'Fixture';
+    return { spec: `${m ? m + '@' : ''}${n}.gdtf`, mode: t?.mode ?? '' };
+  };
   const missingGdtf = new Set<string>();
   const writeFixtureProps = (node: Element, f: Fixture, b: Fixture | null) => {
     if (!b || f.name !== b.name) node.setAttribute('name', f.name);
     if (!b || f.typeKey !== b.typeKey) {
-      const { spec, mode } = typeSpec(f.typeKey); setText(node, 'GDTFSpec', spec); setText(node, 'GDTFMode', mode);
-      if (spec && original && ![...files.keys()].some(k => k.toLowerCase() === spec.toLowerCase())) missingGdtf.add(doc.types.get(f.typeKey)?.n || f.typeKey);
+      const { spec, mode } = typeSpec(f.typeKey); setText(node, 'GDTFSpec', spec, true); setText(node, 'GDTFMode', mode, true);
+      if (spec && ![...files.keys()].some(k => k.toLowerCase() === spec.toLowerCase())) missingGdtf.add(doc.types.get(f.typeKey)?.n || f.typeKey);
     }
     if (!b || f.classId !== b.classId) setText(node, 'Classing', f.classId);
     if (!b || f.positionId !== b.positionId) setText(node, 'Position', f.positionId);
-    if (!b || f.fixtureId !== b.fixtureId) setText(node, 'FixtureID', f.fixtureId || (b ? '' : '0'));
+    if (!b || f.fixtureId !== b.fixtureId) setText(node, 'FixtureID', f.fixtureId, true);
     if (!b || f.unitNumber !== b.unitNumber) setText(node, 'UnitNumber', f.unitNumber != null ? String(f.unitNumber) : (b ? null : '0'));
     if (!b || f.address !== b.address) {
       let as = child(node, 'Addresses');
@@ -82,7 +92,10 @@ export async function exportMvr(doc: Doc, original: Uint8Array | null, deps: Exp
     const ra = { x: c * l0.a.x - s * l0.a.y, y: s * l0.a.x + c * l0.a.y };
     return { u: { x: c, y: s, z: 0 }, v: { x: -s, y: c, z: 0 }, w: { x: 0, y: 0, z: 1 }, o: { x: l1.a.x - ra.x, y: l1.a.y - ra.y, z: l1.a.z - l0.a.z } };
   };
-  const legsEqual = (a: Truss, b: Truss) => JSON.stringify(a.legs.map(l => [l.a, l.b])) === JSON.stringify(b.legs.map(l => [l.a, l.b]));
+  // Swap A/B reverses the legs without moving anything, so a reversed run counts as unchanged
+  const ends = (t: Truss) => t.legs.map(l => [l.a, l.b]);
+  const rev = (t: Truss) => t.legs.slice().reverse().map(l => [l.b, l.a]);
+  const legsEqual = (a: Truss, b: Truss) => { const x = JSON.stringify(ends(a)); return x === JSON.stringify(ends(b)) || x === JSON.stringify(rev(b)); };
 
   // Walk the original tree with the original and the new frame of each parent, editing as we go.
   const walk = (list: Element, origFrame: Mat, newFrame: Mat) => {
@@ -131,7 +144,13 @@ export async function exportMvr(doc: Doc, original: Uint8Array | null, deps: Exp
     let cl = child(l, 'ChildList'); if (!cl) { cl = el('ChildList'); l.appendChild(cl); }
     return { list: cl, frame: localOf(l) };
   };
-  const uuid = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(16).slice(2)).toUpperCase();
+  /** A stable uuid from a seed (so a second export updates rather than duplicates in the LD's file). */
+  const uuid = (seed: string) => {
+    let hex = '';
+    for (let k = 0; k < 4; k++) { let h = 0x811c9dc5 ^ (k * 0x9e3779b9); for (let i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 0x01000193); } hex += (h >>> 0).toString(16).padStart(8, '0'); }
+    hex = hex.slice(0, 12) + '4' + hex.slice(13, 16) + ((parseInt(hex[16], 16) & 3) | 8).toString(16) + hex.slice(17);
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`.toUpperCase();
+  };
   let modelless = 0;
   for (const e of doc.entities.values() as Iterable<Entity>) {
     if (base.entities.has(e.id)) continue;
@@ -148,10 +167,11 @@ export async function exportMvr(doc: Doc, original: Uint8Array | null, deps: Exp
         const u = { x: dx / L, y: dy / L, z: dz / L }, w0 = { x: 0, y: 0, z: 1 };
         const v = { x: w0.y * u.z - w0.z * u.y, y: w0.z * u.x - w0.x * u.z, z: w0.x * u.y - w0.y * u.x }, vl = Math.hypot(v.x, v.y, v.z) || 1;
         const vn = { x: v.x / vl, y: v.y / vl, z: v.z / vl }, w = { x: u.y * vn.z - u.z * vn.y, y: u.z * vn.x - u.x * vn.z, z: u.x * vn.y - u.y * vn.x };
-        const node = el('Truss', { uuid: i === 0 ? (e.mvrUuid ?? e.id) : uuid(), name: e.legs.length > 1 ? `${e.name} leg ${i + 1}` : e.name });
+        const node = el('Truss', { uuid: i === 0 ? (e.mvrUuid ?? e.id) : uuid(`${e.id}:leg:${i}`), name: e.legs.length > 1 ? `${e.name} leg ${i + 1}` : e.name });
         setMatrix(node, compose(invert(frame), { u, v: vn, w, o: { ...l.a } }));
         if (e.classId) node.appendChild(el('Classing', {}, e.classId));
         if (e.positionId) node.appendChild(el('Position', {}, e.positionId));
+        node.appendChild(el('Geometries'));
         list.appendChild(node);
       });
       modelless++;
