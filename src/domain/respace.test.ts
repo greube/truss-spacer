@@ -50,3 +50,23 @@ test('warnings: no fixtures, and too many at a fixed gap', () => {
   const r = respaceCommand(rig([[0, 0, 8000, 0, []]], [[1, 0], [2, 0], [3, 0], [4, 0]]), 'T', st({ mode: 'fixed', gap: 3000 }));
   expect(r.command).not.toBeNull(); expect(r.warning).toMatch(/longer than the truss/);
 });
+
+import { confirmCommand, respacePlan } from './respace';
+test('confirming a straight truss sets its length from the sections, end A a set distance before the first fixture', () => {
+  const d = rig([[-250, 0, 9250, 0, []]], [[0, 0], [3000, 0], [9000, 0]]); (d.entities.get('T') as Truss).state = 'draft';
+  const h = new History(d); h.exec(confirmCommand(d, 'T', [3000, 3000, 3000], 500));
+  const t = d.entities.get('T') as Truss;
+  expect(t.state).toBe('confirmed'); expect(t.legs).toHaveLength(1);
+  expect(t.legs[0].a.x).toBeCloseTo(-500); expect(t.legs[0].b.x).toBeCloseTo(8500); expect(t.legs[0].sections).toEqual([3000, 3000, 3000]); expect(t.legs[0].a.z).toBe(6000);
+  h.undo(); expect((d.entities.get('T') as Truss).state).toBe('draft'); expect((d.entities.get('T') as Truss).legs[0].a.x).toBe(-250);
+});
+test('confirming a truss with corners keeps its shape and fills empty sections', () => {
+  const d = rig([[0, 0, 4000, 0, []], [4000, 0, 4000, 3000, [3000]]], [[1000, 0]]); (d.entities.get('T') as Truss).state = 'draft';
+  new History(d).exec(confirmCommand(d, 'T', null, 0));
+  const t = d.entities.get('T') as Truss;
+  expect(t.state).toBe('confirmed'); expect(t.legs[0].sections).toEqual([3000, 1000]); expect(t.legs[1].sections).toEqual([3000]); expect(t.legs[1].b.y).toBe(3000);
+});
+test('the re-space preview reports the gap it will give', () => {
+  const d = rig([[0, 0, 8000, 0, [3000, 3000, 2000]]], [[400, 0], [1200, 0], [3300, 0], [5000, 0], [6000, 0], [7600, 0]]);
+  expect(respacePlan(d, 'T', st({ mode: 'equal' }))).toMatchObject({ count: 6, gap: 8000 / 7, warning: '' });
+});

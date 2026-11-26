@@ -25,6 +25,8 @@ import { renderHelp } from './ui/help';
 import { label as typeLabel } from './domain/fixtures/db';
 import { createJobs } from './ui/jobs';
 import { renderReview, renderPicker } from './ui/review';
+import { renderSpacingPanel } from './ui/spacingPanel';
+import type { SpacingState } from './ui/spacingPanel';
 import type { Doc } from './core/model/types';
 
 const THEME_KEY = 'trussCadTheme';
@@ -58,6 +60,7 @@ const app: AppCtx = {
   setTool(id) {
     const t = tools[id]; if (!t) return;
     active.deactivate(); active = t; t.activate(app); shell.setActiveTool(id); shell.stage.style.cursor = t.cursor; scheduleDraw();
+    if (typeof renderSpacing === 'function') renderSpacing();
   },
   units: { fmt: (mm: number) => fmt(mm, false, app.doc.settings) },
   visible(e: Entity) {
@@ -96,8 +99,25 @@ function describe(e: Entity): string {
   if (e.kind === 'truss') return `${e.name}${e.state === 'draft' ? ' (draft)' : ''}`;
   return e.name;
 }
+// Spacing panel: side column on a laptop, a bottom sheet on a phone
+const spState: SpacingState = { showSec: false, done: new Set(), sel: null, key: '' };
+let spSheet: { refresh(): void; close(): void } | null = null;
+const spHooks = { toast: (m: string, w?: boolean) => shell.toast(m, w), exportImage: (id: string, rows: any, st: any, showSec: boolean) => exportRunImage(id, rows, st, showSec) };
+function renderSpacing() {
+  const id = active.id === 'spacing' ? spacingTool.current : null;
+  shell.side.spacingSec.hidden = !id;
+  clear(shell.side.spacing);
+  if (id && !shell.isPhone()) renderSpacingPanel(shell.side.spacing, app, id, spState, spHooks);
+  if (id && shell.isPhone()) { if (spSheet) spSheet.refresh(); else spSheet = shell.openSheet('Spacing', el => { const cur = spacingTool.current; if (cur) renderSpacingPanel(el, app, cur, spState, spHooks); }, () => { spSheet = null; }); }
+  if (!id && spSheet) { spSheet.close(); spSheet = null; }
+}
+spacingTool.onPick = () => { spState.sel = null; renderSpacing(); };
+// filled in by the plot image export (next task)
+let exportRunImage = (_id: string, _rows: unknown, _st: unknown, _showSec: boolean) => shell.toast('Image export comes next.');
+
 function renderPanels() {
   renderInfo();
+  renderSpacing();
   clear(shell.side.layers); renderLayers(shell.side.layers, app);
   clear(shell.side.positions); renderPositions(shell.side.positions, app);
   shell.unitSel.value = app.doc.settings.unit;

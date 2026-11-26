@@ -5,7 +5,7 @@ export interface Shell {
   root: HTMLElement; stage: HTMLElement; canvas: HTMLCanvasElement;
   jobBtn: HTMLButtonElement; jobName: HTMLElement; undoBtn: HTMLButtonElement; redoBtn: HTMLButtonElement;
   unitSel: HTMLSelectElement; themeBtn: HTMLButtonElement; fitBtn: HTMLButtonElement;
-  side: { info: HTMLElement; layers: HTMLElement; positions: HTMLElement };
+  side: { info: HTMLElement; layers: HTMLElement; positions: HTMLElement; spacing: HTMLElement; spacingSec: HTMLElement };
   status: { xy: HTMLElement; msg: HTMLElement };
   phoneMsg: HTMLElement; selbar: HTMLElement; selWhat: HTMLElement; selInfo: HTMLButtonElement;
   setActiveTool(id: string): void;
@@ -34,8 +34,9 @@ export function buildShell(root: HTMLElement, tools: ToolButton[], phoneExtra: T
   const palette = h('nav', { class: 'palette', 'aria-label': 'Tools' }, ...tools.map(t => btn(t)));
   const toolbar = h('nav', { class: 'tools', 'aria-label': 'Tools' }, ...tools.map(t => btn(t)), btn(phoneExtra));
   const section = (title: string) => { const body = h('div'); return { el: h('section', { class: 'sec' }, h('h3', { text: title }), body), body }; };
-  const info = section('Object info'), layers = section('Layers & classes'), positions = section('Hanging positions');
-  const side = h('aside', { class: 'side' }, info.el, positions.el, layers.el);
+  const info = section('Object info'), layers = section('Layers & classes'), positions = section('Hanging positions'), spacing = section('Spacing');
+  spacing.el.hidden = true;
+  const side = h('aside', { class: 'side' }, spacing.el, info.el, positions.el, layers.el);
   const xy = h('span', { text: '' }), msg = h('span', { class: 'msg', text: '' });
   const status = h('footer', { class: 'status' }, xy, msg);
   const selWhat = h('span', { class: 'what', text: '' });
@@ -46,7 +47,7 @@ export function buildShell(root: HTMLElement, tools: ToolButton[], phoneExtra: T
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
   const shell: Shell = {
     root, stage, canvas, jobBtn, jobName, undoBtn, redoBtn, unitSel, themeBtn, fitBtn,
-    side: { info: info.body, layers: layers.body, positions: positions.body },
+    side: { info: info.body, layers: layers.body, positions: positions.body, spacing: spacing.body, spacingSec: spacing.el },
     status: { xy, msg }, phoneMsg, selbar, selWhat, selInfo,
     setActiveTool(id) { root.querySelectorAll('[data-tool]').forEach(b => b.setAttribute('aria-pressed', String(b.getAttribute('data-tool') === id))); },
     openSheet(title, render, onClose) {
