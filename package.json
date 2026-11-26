@@ -6,7 +6,7 @@
   "description": "CAD-style lighting plot tool: import an LD's MVR, then spacing, power and cabling tools.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node scripts/build-sw.mjs",
     "test": "vitest run",
     "e2e": "node e2e/m1.mjs"
   },

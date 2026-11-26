@@ -1,0 +1,16 @@
+name: Preview cad
+
+# Runs on every push to cad. When it finishes, the "Deploy to GitHub Pages" workflow on main
+# rebuilds the site with this branch built (npm ci && npm run build) at /truss-spacer/cad/. Kept on cad only.
+
+on:
+  push:
+    branches: [cad]
+
+permissions: {}
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "cad updated at ${GITHUB_SHA::7}; the Pages workflow on main will rebuild the /cad/ preview."

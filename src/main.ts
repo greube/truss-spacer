@@ -177,5 +177,16 @@ shell.jobBtn.onclick = () => jobs.openSheet();
 app.setTool('select');
 renderPanels(); resize();
 void jobs.startup();
+
+// Offline: only over http(s). A new version reloads once when it takes over, and is checked for when the app comes back on screen.
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  const hadSW = !!navigator.serviceWorker.controller; let reloaded = false;
+  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').then(r => r.update()).catch(() => {}); });
+  navigator.serviceWorker.addEventListener('controllerchange', async () => {
+    if (!hadSW || reloaded) return; reloaded = true;
+    await jobs.saveNow(); location.reload();
+  });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') navigator.serviceWorker.getRegistration().then(r => r?.update()).catch(() => {}); });
+}
 // For automated tests and debugging
 (window as any).__cad = { app, jobs, renderer, shell, importBuffer: (buf: ArrayBuffer, name = 'Imported rig.mvr') => jobs.importFile(new Blob([buf]), name) };
