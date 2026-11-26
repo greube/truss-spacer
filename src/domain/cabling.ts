@@ -39,6 +39,7 @@ export function rigCabling(doc: Doc): RigCabling {
     const ordered = from === 'b' ? fx.slice().reverse() : fx;
     const flags: string[] = [];
     if (g.kind === 'loose') flags.push('Not on a truss or position: chained nearest first, check the route.');
+    if (!t) flags.push('Needs its own DMX feed to the first fixture (not counted here).');
     const noAddr = fx.filter(f => f.address == null).length;
     if (noAddr) flags.push(`${noAddr} fixture${noAddr === 1 ? ' has' : 's have'} no DMX address (put on the first line).`);
     // one chain per universe, in order of first appearance from the chosen end; unaddressed fixtures join the first

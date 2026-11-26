@@ -10,7 +10,8 @@ export interface FixturePower { group: string; soca: string; label: string; phas
 export interface RigPower { plan: RigPlan; groups: PowerGroup[]; byFixture: Map<Id, FixturePower>; unknown: number }
 
 const xy = (f: Fixture) => ({ x: f.matrix.o.x, y: f.matrix.o.y });
-/** Fixtures further apart than this (not on a truss) start a new run: the two sides of a room aren't one row. */
+/** Fixtures further apart than this (not on a truss), and well beyond the row's usual spacing, start a new run:
+    the two sides of a room aren't one row. */
 const SPLIT = 5000;
 
 /** A best-fit direction pointing left to right (or bottom to top for a line running up the plan). */
@@ -32,11 +33,14 @@ export function floorRuns(fs: Fixture[]): Fixture[][] {
     for (const f of rest) { const d = Math.hypot(f.matrix.o.x - cur.matrix.o.x, f.matrix.o.y - cur.matrix.o.y); if (d < bd - 1e-9) { bd = d; best = f; } }
     path.push(best!); rest.delete(best!);
   }
+  // cut only at a gap that is both long and well beyond the row's usual spacing, so an evenly spaced row stays whole
+  const gaps = path.slice(1).map((b, i) => Math.hypot(b.matrix.o.x - path[i].matrix.o.x, b.matrix.o.y - path[i].matrix.o.y));
+  const med = gaps.slice().sort((a, b) => a - b)[Math.floor(gaps.length / 2)];
   const parts: Fixture[][] = [[path[0]]];
   for (let i = 1; i < path.length; i++) {
-    const a = path[i - 1], b = path[i];
-    if (Math.hypot(b.matrix.o.x - a.matrix.o.x, b.matrix.o.y - a.matrix.o.y) > SPLIT) parts.push([]);
-    parts[parts.length - 1].push(b);
+    const g = gaps[i - 1];
+    if (g > SPLIT && g > 3 * med) parts.push([]);
+    parts[parts.length - 1].push(path[i]);
   }
   return parts.map(p => { if (p.length < 2) return p; const al = readingDir(p); return al(p[0]) > al(p[p.length - 1]) ? p.reverse() : p; });
 }

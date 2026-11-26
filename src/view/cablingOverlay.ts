@@ -7,12 +7,21 @@ import { CIRCUIT_COLOURS } from './powerOverlay';
 
 const legLen = (l: Truss['legs'][number]) => Math.hypot(l.b.x - l.a.x, l.b.y - l.a.y);
 
-/** World points along a truss from s0 to s1 (through any corners), pushed sideways by off mm. */
-function pathAlong(t: Truss, s0: number, s1: number, off: number): V2[] {
-  const stops = [s0]; let acc = 0;
-  for (const l of t.legs.slice(0, -1)) { acc += legLen(l); if (acc > Math.min(s0, s1) && acc < Math.max(s0, s1)) stops.push(acc); }
-  stops.push(s1); if (s1 < s0) { const mid = stops.slice(1, -1).reverse(); stops.splice(1, mid.length, ...mid); }
-  return stops.map(s => { const { p, yaw } = pointAt(t, s); return { x: p.x - Math.sin(yaw) * off, y: p.y + Math.cos(yaw) * off }; });
+/** World points along a truss from s0 to s1 (through any corners), pushed sideways by off mm. Corners are mitred,
+    so the line stays off both legs instead of cutting across. */
+export function pathAlong(t: Truss, s0: number, s1: number, off: number): V2[] {
+  const yawOf = (i: number) => { const l = t.legs[i]; return Math.atan2(l.b.y - l.a.y, l.b.x - l.a.x); };
+  const normal = (yaw: number) => ({ x: -Math.sin(yaw), y: Math.cos(yaw) });
+  const corners: { s: number; i: number }[] = []; let acc = 0;
+  t.legs.slice(0, -1).forEach((l, i) => { acc += legLen(l); if (acc > Math.min(s0, s1) && acc < Math.max(s0, s1)) corners.push({ s: acc, i }); });
+  if (s1 < s0) corners.reverse();
+  const end = (s: number) => { const { p, yaw } = pointAt(t, s); const n = normal(yaw); return { x: p.x + n.x * off, y: p.y + n.y * off }; };
+  const mid = corners.map(({ s, i }) => {
+    const { p } = pointAt(t, s), n1 = normal(yawOf(i)), n2 = normal(yawOf(i + 1));
+    const k = off / (1 + n1.x * n2.x + n1.y * n2.y || 1);
+    return { x: p.x + (n1.x + n2.x) * k, y: p.y + (n1.y + n2.y) * k };
+  });
+  return [end(s0), ...mid, end(s1)];
 }
 
 /** DMX chains: a line per chain from the feed end through its fixtures, the stock length of each cable, and a DMX marker. */
@@ -39,7 +48,7 @@ export function drawCablingOverlay(ctx: CanvasRenderingContext2D, cam: Camera, d
         ctx.beginPath(); ctx.moveTo(sp[0].x, sp[0].y); for (const p of sp.slice(1)) ctx.lineTo(p.x, p.y); ctx.stroke();
         if (!from && t) { // feed marker at the truss end
           ctx.fillStyle = col; ctx.beginPath(); ctx.arc(sp[0].x, sp[0].y, 4, 0, Math.PI * 2); ctx.fill();
-          if (on) { ctx.font = '700 11px "Barlow Condensed", system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(ch.universe != null ? `DMX U${ch.universe}` : 'DMX', sp[0].x, sp[0].y - 6); }
+          if (on) { ctx.font = '700 11px "Barlow Condensed", system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(ch.universe != null ? `DMX U${ch.universe}` : 'DMX', sp[0].x, sp[0].y - 6 - ci * 12); /* stacked, one per line */ }
         }
         const a = sp[0], b = sp[sp.length - 1];
         if (on && Math.hypot(b.x - a.x, b.y - a.y) > 44) {

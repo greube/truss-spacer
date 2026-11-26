@@ -69,3 +69,11 @@ describe('daisy-chains', () => {
     expect(c).toMatchObject({ len: 50000, count: 3, over: true });
   });
 });
+
+test('review fix: floor runs are flagged as needing their own DMX feed', () => {
+  const d = doc(fix(0, 0, { positionId: 'P' }), fix(6000, 0, { positionId: 'P' }), fix(12000, 0, { positionId: 'P' }));
+  d.positions.push({ id: 'P', name: 'Uplights' });
+  const r = rigCabling(d).runs[0];
+  expect(r.chains[0].cables.length).toBe(2);
+  expect(r.flags.join(' ')).toMatch(/own DMX feed/);
+});

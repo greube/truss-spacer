@@ -108,3 +108,9 @@ describe('positions spread across the room (two side columns in one position)', 
     expect(powerGroups(d).map(x => x.name)).toEqual(['Floor']);
   });
 });
+
+test('review fix: an evenly spaced row 6 m apart stays one run', () => {
+  const d = doc(); d.positions.push({ id: 'P', name: 'Uplights' });
+  put(d, ...[0, 6000, 12000, 18000, 24000].map(x => fix(x, 0, 'spot', { positionId: 'P' })));
+  expect(powerGroups(d).map(g => [g.name, g.fixtureIds.length])).toEqual([['Uplights', 5]]);
+});
