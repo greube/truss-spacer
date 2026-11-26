@@ -11,7 +11,7 @@ const HINT = 'Fixtures are coloured by circuit. Tap one to see its run.';
 /** Shows the rig's circuits on the plot; tapping a fixture or truss picks its power run. Dragging pans. */
 export class PowerTool implements Tool {
   id = 'power'; label = 'Power'; cursor = 'pointer';
-  /** The picked power group (a truss id, 'pos:<id>' or 'loose'). */
+  /** The picked power group (a truss id, 'pos:<id>[:n]' or 'loose[:n]'). */
   current: string | null = null;
   onPick: ((group: string | null) => void) | null = null;
   private app!: AppCtx; private last: V2 | null = null;

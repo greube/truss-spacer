@@ -90,3 +90,21 @@ describe('rig power', () => {
     expect(r.byFixture.get(fx[0].id)!.label).not.toBe(r.byFixture.get(fx[1].id)!.label);
   });
 });
+
+describe('positions spread across the room (two side columns in one position)', () => {
+  test('split where fixtures are far apart, each part in order along itself', () => {
+    const d = doc(); d.positions.push({ id: 'P', name: 'Sides' });
+    const left = [0, 1500, 3000, 4500].map(y => fix(0, y, 'spot', { positionId: 'P' }));
+    const right = [0, 1500, 3000, 4500].map(y => fix(20000, y, 'spot', { positionId: 'P' }));
+    put(d, ...[left[2], right[0], left[0], right[3], left[1], right[1], left[3], right[2]]);
+    const g = powerGroups(d);
+    expect(g.map(x => x.name)).toEqual(['Sides 1', 'Sides 2']);
+    const ids = (fs: Fixture[]) => fs.map(f => f.id);
+    expect([g[0].fixtureIds, g[1].fixtureIds]).toEqual([ids(left), ids(right)]);
+  });
+  test('a single tidy row stays one group under its own name', () => {
+    const d = doc(); d.positions.push({ id: 'P', name: 'Floor' });
+    put(d, ...[0, 1000, 2000].map(x => fix(x, 0, 'spot', { positionId: 'P' })));
+    expect(powerGroups(d).map(x => x.name)).toEqual(['Floor']);
+  });
+});

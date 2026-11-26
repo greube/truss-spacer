@@ -38,7 +38,7 @@ export function rigCabling(doc: Doc): RigCabling {
     if (t) for (const f of fx) { const s = alongRun(t, { x: f.matrix.o.x, y: f.matrix.o.y }).s; pos.set(f.id, from === 'a' ? s : L - s); }
     const ordered = from === 'b' ? fx.slice().reverse() : fx;
     const flags: string[] = [];
-    if (g.kind === 'loose') flags.push('Not on a truss or position: chained left to right, check the route.');
+    if (g.kind === 'loose') flags.push('Not on a truss or position: chained nearest first, check the route.');
     const noAddr = fx.filter(f => f.address == null).length;
     if (noAddr) flags.push(`${noAddr} fixture${noAddr === 1 ? ' has' : 's have'} no DMX address (put on the first line).`);
     // one chain per universe, in order of first appearance from the chosen end; unaddressed fixtures join the first

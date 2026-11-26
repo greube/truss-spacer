@@ -10,6 +10,36 @@ export interface FixturePower { group: string; soca: string; label: string; phas
 export interface RigPower { plan: RigPlan; groups: PowerGroup[]; byFixture: Map<Id, FixturePower>; unknown: number }
 
 const xy = (f: Fixture) => ({ x: f.matrix.o.x, y: f.matrix.o.y });
+/** Fixtures further apart than this (not on a truss) start a new run: the two sides of a room aren't one row. */
+const SPLIT = 5000;
+
+/** A best-fit direction pointing left to right (or bottom to top for a line running up the plan). */
+function readingDir(fs: Fixture[]) {
+  const { origin, dir } = fitLine(fs.map(xy));
+  const d = dir.x < -1e-9 || (Math.abs(dir.x) <= 1e-9 && dir.y < 0) ? { x: -dir.x, y: -dir.y } : dir;
+  return (f: Fixture) => (f.matrix.o.x - origin.x) * d.x + (f.matrix.o.y - origin.y) * d.y;
+}
+
+/** Orders fixtures that aren't on a truss as a walk from one end to its nearest neighbour each time, then cuts
+    the walk wherever the next fixture is more than SPLIT away. Each part reads left to right. */
+export function floorRuns(fs: Fixture[]): Fixture[][] {
+  if (fs.length < 2) return fs.length ? [fs.slice()] : [];
+  const along = readingDir(fs);
+  const left = fs.slice().sort((a, b) => along(a) - along(b) || a.matrix.o.y - b.matrix.o.y || a.matrix.o.x - b.matrix.o.x);
+  const path = [left[0]], rest = new Set(left.slice(1));
+  while (rest.size) {
+    const cur = path[path.length - 1]; let best: Fixture | null = null, bd = Infinity;
+    for (const f of rest) { const d = Math.hypot(f.matrix.o.x - cur.matrix.o.x, f.matrix.o.y - cur.matrix.o.y); if (d < bd - 1e-9) { bd = d; best = f; } }
+    path.push(best!); rest.delete(best!);
+  }
+  const parts: Fixture[][] = [[path[0]]];
+  for (let i = 1; i < path.length; i++) {
+    const a = path[i - 1], b = path[i];
+    if (Math.hypot(b.matrix.o.x - a.matrix.o.x, b.matrix.o.y - a.matrix.o.y) > SPLIT) parts.push([]);
+    parts[parts.length - 1].push(b);
+  }
+  return parts.map(p => { if (p.length < 2) return p; const al = readingDir(p); return al(p[0]) > al(p[p.length - 1]) ? p.reverse() : p; });
+}
 
 export function powerGroups(doc: Doc): PowerGroup[] {
   const trusses: Truss[] = [], onTruss = new Map<Id, Fixture[]>(), onPos = new Map<Id, Fixture[]>(), loose: Fixture[] = [];
@@ -32,16 +62,12 @@ export function powerGroups(doc: Doc): PowerGroup[] {
   for (const p of doc.positions) {
     const fs = onPos.get(p.id);
     if (!fs?.length) continue;
-    const { origin, dir } = fitLine(fs.map(xy));
-    // Read left to right (or bottom to top for a line running up the plan).
-    const d = dir.x < -1e-9 || (Math.abs(dir.x) <= 1e-9 && dir.y < 0) ? { x: -dir.x, y: -dir.y } : dir;
-    const along = (f: Fixture) => (f.matrix.o.x - origin.x) * d.x + (f.matrix.o.y - origin.y) * d.y;
-    fs.sort((a, b) => along(a) - along(b));
-    out.push({ id: 'pos:' + p.id, name: p.name || 'Position', kind: 'position', fixtureIds: fs.map((f) => f.id) });
+    const parts = floorRuns(fs), base = p.name || 'Position';
+    parts.forEach((part, k) => out.push({ id: 'pos:' + p.id + (parts.length > 1 ? ':' + (k + 1) : ''), name: parts.length > 1 ? `${base} ${k + 1}` : base, kind: 'position', fixtureIds: part.map(f => f.id) }));
   }
   if (loose.length) {
-    loose.sort((a, b) => a.matrix.o.x - b.matrix.o.x || a.matrix.o.y - b.matrix.o.y);
-    out.push({ id: 'loose', name: 'Unassigned', kind: 'loose', fixtureIds: loose.map((f) => f.id) });
+    const parts = floorRuns(loose);
+    parts.forEach((part, k) => out.push({ id: 'loose' + (parts.length > 1 ? ':' + (k + 1) : ''), name: parts.length > 1 ? `Unassigned ${k + 1}` : 'Unassigned', kind: 'loose', fixtureIds: part.map(f => f.id) }));
   }
   return out;
 }

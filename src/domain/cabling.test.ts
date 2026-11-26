@@ -64,7 +64,7 @@ describe('daisy-chains', () => {
     expect(rc.runs[0].flags.join(' ')).toMatch(/no DMX address/);
   });
   test('a gap over 50 m is flagged and counted in 50 m cables', () => {
-    const d = doc(fix(0, 0), fix(120000, 0));
+    const d = doc(truss('T', [[0, 0, 130000, 0]]), fix(120000, 0, { trussId: 'T' }));
     const c = rigCabling(d).runs[0].chains[0].cables[0];
     expect(c).toMatchObject({ len: 50000, count: 3, over: true });
   });
